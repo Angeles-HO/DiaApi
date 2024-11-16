@@ -12,7 +12,7 @@ local menu_dia_nx = {
 
     },
     miscs = {
-    someting_checkbox = ui.add_check_box("Enable Fpsboost", "fpsboost_enable", false),
+    someting_checkbox = Dia_Api.ui.add_check_box("Enable Fpsboost", "fpsboost_enable", false),
     },
     keybinds = {
 
