@@ -1,0 +1,987 @@
+local ui = {
+    --[[
+        add_check_box(label, var_name, def_value)
+        string	label	Checkbox label
+        string	var_name	Variable key
+        bool	def_value	Default value
+    ]]--
+    add_check_box = ui.add_check_box,
+    --[[ 
+        get_check_box(var_name): check_box_t
+        string	var_name	Variable key
+        my_checkbox = ui.get_check_box("legit_enable")
+    ]]
+    get_check_box = ui.get_check_box,
+    --[[ 
+       add_slider_int(label, var_name, min, max, def_value): slider_int_t
+        Type	Name	Description
+        string	label	Slider label
+        string	var_name	Variable key
+        number	min	Min value
+        number	max	Max value
+        number	def_value	Default value
+    ]]
+    add_slider_int = ui.add_slider_int,
+    --[[ 
+        get_slider_int(var_name): slider_int_t
+        Type	Name	Description
+        string	var_name	Variable key
+    ]]
+    get_slider_int = ui.get_slider_int,
+    --[[ 
+        add_combo_box(label, var_name, items, def_value): combo_box_t
+        Type	Name	Description
+        string	label	Combobox label
+        string	var_name	Variable key
+        string array	items	Combo items
+        number	def_value	Default value
+    ]]
+    add_combo_box = ui.add_combo_box,
+    --[[ 
+        get_combo_box(var_name): combo_box_t
+        Type	Name	Description
+        string	var_name	Variable key
+    ]]
+    get_combo_box = ui.get_combo_box,
+    --[[ 
+        add_multi_combo_box(label, var_name, items, def_values): multi_combo_box_t
+        Type	Name	Description
+        string	label	Multicombobox label
+        string	var_name	Variable key
+        string array	items	Items
+        bool array	def_values	Default values
+    ]]
+    add_multi_combo_box = ui.add_multi_combo_box,
+    --[[ 
+        get_multi_combo_box(var_name): multi_combo_box_t
+        Type	Name	Description
+        string	var_name	Variable key
+    ]]
+    get_multi_combo_box = ui.get_multi_combo_box,
+    --[[ 
+        add_text_input(label, var_name, def_value): text_input_t
+        Type	Name	Description
+        string	label	Slider label
+        string	var_name	Variable key
+        string	def_value	Default value
+    ]]
+    add_text_input = ui.add_text_input,
+    --[[ 
+        add_slider_float(label, var_name, min, max, def_value): slider_float_t
+        Type	Name	Description
+        string	label	Slider label
+        string	var_name	Variable key
+        number	min	Min value
+        number	max	Max value
+        number	def_value	Default value
+    ]]
+    add_slider_float = ui.add_slider_float,
+    --[[ 
+        get_slider_float(var_name): slider_float_t
+        Type	Name	Description
+        string	var_name	Variable key
+    ]]
+    get_slider_float = ui.get_slider_float,
+    --[[ 
+        dd_key_bind(label, var_name, def_key, def_mode): key_bind_t
+        Type	Name	Description
+        string	label	Keybind label
+        string	var_name	Variable key
+        number	def_key	Default key
+        number	def_mode	Default mode
+    ]]
+    add_key_bind = ui.add_key_bind,
+    --[[ 
+        get_key_bind(var_name): key_bind_t
+        Type	Name	Description
+        string	var_name	Variable key
+    ]]
+    get_key_bind = ui.get_key_bind,
+    --[[ 
+        add_color_edit(label, var_name, show_alpha, def_color): color_edit_t
+        Type	Name	Description
+        string	label	Coloredit label
+        string	var_name	Variable key
+        bool	show_alpha	Enables the alpha modifer
+        color_t	def_color	Default color
+    ]]
+    add_color_edit = ui.add_color_edit,
+    --[[ 
+       get_color_edit(var_name): color_edit_t
+        Type	Name	Description
+        string	var_name	Variable key
+    ]]
+    get_color_edit = ui.get_color_edit,
+    --[[ 
+       is_visible(): bool
+        Returns true if menu opened
+    ]]
+    visible = ui.is_visible,
+    --[[ 
+        set_visible(value)
+        Type	Name	Description
+        bool	value	Set menu visible or not
+    ]]
+    set_visible = ui.set_visible,
+    --[[ 
+        get_menu_rect(): vec4_t
+        local menu_rect = ui.get_menu_rect()
+        renderer.rect_filled(vec2_t.new(menu_rect.z + 10, menu_rect.y), vec2_t.new(menu_rect.z + 50, menu_rect.w), color_t.new(255, 255, 255, 255))
+    ]]
+    get_menu_rect = ui.get_menu_rect
+}
+
+local client = {
+    --[[ 
+        load_script(scriptname)
+        Type	Name	Description
+        string	scriptname	Script name
+    ]]
+    load_script = client.load_script,
+    --[[ 
+        unload_script(scriptname)
+        Type	Name	Description
+        string	scriptname	Script name
+    ]]
+    unload_script = client.unload_script,
+    --[[ 
+        get_script_name(): string
+        Returns current script name
+    ]]
+    get_script_name = client.get_script_name,
+    --[[ 
+        get_script_name(): string
+        Returns current script name
+    ]]
+    current_script_name = client.current_script_name,
+    --[[ 
+        register_callback(eventname, fn)
+        Type	Name	Description
+        string	eventname	Callback name
+        function	fn	Lua function()
+    ]]
+    register_callback = client.register_callback,
+    --[[ 
+        get_username(): string
+        Returns your cheat username
+    ]]
+    get_username = client.get_username,
+    --[[ 
+        notify(text)
+        Type	Name	Description
+        string	text	Notification text
+    ]]
+    notify = client.notify,
+    --[[ 
+        get_time_stamp(): number
+        Returns the unix timestamp
+    ]]
+    get_time_stamp = client.get_time_stamp,
+    --[[ 
+       get_system_time(): number, number, number
+        Returns the windows timer
+        local hours, minutes, seconds = client.get_system_time()
+    ]]
+    get_system_time = client.get_system_time,
+    --[[ 
+    Find_pattern(module, pattern): number
+    Type	Name	Description
+    string	module	Module
+    string	pattern	Pattern
+    local line_goes_through_smoke_addr = client.find_pattern("client.dll", "55 8B EC 83 EC 08 8B 15 ? ? ? ? 0F 57 C0")
+    ]]
+    find_pattern = client.find_pattern,
+    --[[ 
+        paint()
+        Callback for drawing
+        unload()
+        Script unload callback
+                
+        create_move(cmd)
+        Type	Name	Description
+        usercmd_t	cmd	Current command
+                
+        frame_stage_notify(stage)
+        Type	Name	Description
+        number	stage	Current stage
+        FrameStageNotify callback. Calls every game stage
+                
+        fire_game_event(event)
+        Type	Name	Description
+        game_event_t	event	Event
+        FireGameEvent callback. Calls on event
+                
+                
+        client.register_callback("round_start", function(event)
+            client.notify("Round started!")
+        end)
+        
+        shot_fired(shot_info)
+        Type	Name	Description
+        shot_info_t	shot_info	Shot info
+        
+        override_view(view_setup)
+        Type	Name	Description
+        view_setup_t	view_setup	Viewsetup object
+        OverrideView callback. Lets you override the camera position and angles
+        
+        
+        client.register_callback("override_view", function(view_setup)
+            view_setup.fov = 110 -- forcing view fov
+        end)
+        
+        net_update_end()
+        Fired after an entity update packet is received from the server. ( FRAME_NET_UPDATE_END )
+    ]]
+    register_callback = client.register_callback
+}
+
+local renderer = {
+    --[[ 
+        renderer table
+        Functions
+        setup_font(filename, size, flags): font
+        Type	Name	Description
+        string	filename	Font file path
+        number	size	Font size in pixels
+        number	flags	Freetype font flags
+        --[[
+        Freetype font flags:
+        -- By default, hinting is enabled and the font's native hinter is preferred over the auto-hinter.
+        NoHinting = 1 -- Disable hinting. This generally generates 'blurrier' bitmap glyphs when the glyph are rendered in any of the anti-aliased modes.
+        NoAutoHint = 2 -- Disable auto-hinter.
+        ForceAutoHint = 4 -- Indicates that the auto-hinter is preferred over the font's native hinter.
+        LightHinting = 8 -- A lighter hinting algorithm for gray-level modes. Many generated glyphs are fuzzier but better resemble their m_original shape. This is achieved by snapping glyphs to the pixel grid only vertically (Y-axis), as is done by Microsoft's ClearType and Adobe's proprietary font renderer. This preserves inter-glyph spacing in horizontal text.
+        MonoHinting = 16 -- Strong hinting algorithm that should only be used for monochrome output.
+        Bold = 32 --  Styling: Should we artificially embolden the font?
+        Oblique = 64 -- Styling: Should we slant the font, emulating italic style?
+        Monochrome = 128 -- Disable anti-aliasing. Combine this with MonoHinting for best results!
+        local tahoma_bold = renderer.setup_font("C:/windows/fonts/tahomabd.ttf", 50, 0)
+    ]]
+    setup_font = renderer.setup_font,
+    --[[ 
+        setup_texture(filename): texture
+        Type	Name	Description
+        string	filename	Texture file path
+        Creates new texture
+        local my_texture = renderer.setup_texture("C:/nixware/example.png")
+    ]]
+    setup_texture = renderer.setup_texture,
+    --[[ 
+        text(text, font, pos, size, color)
+        Type	Name	Description
+        string	text	Text
+        font	font	Font
+        vec2_t	pos	Text position
+        number	size	Font size in pixels
+        color_t	color	Text color
+        Drawing the text
+        local tahoma_bold = renderer.setup_font("C:/windows/fonts/tahomabd.ttf", 50, 0)
+        local function on_paint()
+            renderer.text("hello world!", tahoma_bold, vec2_t.new(10, 10), 50, color_t.new(255, 255, 255, 255))
+        end
+        client.register_callback("paint", on_paint)
+    ]]
+    text = renderer.text,
+    --[[ 
+        texture(tex, from, to, color)
+        Type	Name	Description
+        texture	tex	Texture
+        vec2_t	from	Start position
+        vec2_t	to	End position
+        color_t	color	Texture color ( default value: color_t.new(255, 255, 255, 255) )
+        Drawing the texture
+        local my_texture = renderer.setup_texture("C:/nixware/example.png")
+        local function on_paint()
+            renderer.texture(my_texture, vec2_t.new(0, 0), vec2_t.new(500, 500), color_t.new(255, 255, 255, 255))
+        end
+        client.register_callback("paint", on_paint)
+    ]]
+    texture = renderer.texture,
+    --[[ 
+        get_text_size(font, size, text): vec2_t
+        Type	Name	Description
+        number	font	Font
+        number	size	Font size
+        string	text	Text
+        Returns the text size
+        local tahoma_bold = renderer.setup_font("C:/windows/fonts/tahomabd.ttf", 50, 0)
+        local function on_paint()
+            local hello_world_size = renderer.get_text_size(tahoma_bold, 50, "hello world!")
+        end
+        client.register_callback("paint", on_paint)
+    ]]
+    get_text_size = renderer.get_text_size,
+    --[[ 
+        get_cursor_pos(): vec2_t
+        Returns the cursor position
+        local function on_paint()
+            local mouse_pos = renderer.get_cursor_pos()
+        end
+        client.register_callback("paint", on_paint)
+    ]]
+    get_cursor_pos = renderer.get_cursor_pos,
+    --[[ 
+        line(from, to, color)
+        Type	Name	Description
+        vec2_t	from	Start position
+        vec2_t	to	End position
+        color_t	color	Color
+        Drawing the line
+        local function on_paint()
+            renderer.line(vec2_t.new(5, 5), vec2_t.new(20, 20), color_t.new(255, 0, 0, 255))
+        end
+        client.register_callback("paint", on_paint)
+    ]]
+    line = renderer.line,
+    --[[ 
+        rect(from, to, color)
+        Type	Name	Description
+        vec2_t	from	Start position
+        vec2_t	to	End position
+        color_t	color	Color
+        Drawing the rect
+        local function on_paint()
+            renderer.rect(vec2_t.new(5, 5), vec2_t.new(20, 20), color_t.new(255, 0, 0, 255))
+        end
+        client.register_callback("paint", on_paint)
+    ]]
+    rect = renderer.rect,
+    --[[ 
+        rect_filled(from, to, color)
+        Type	Name	Description
+        vec2_t	from	Start position
+        vec2_t	to	End position
+        color_t	color	Rect color
+        Drawing the filled rect
+        local function on_paint()
+            renderer.rect_filled(vec2_t.new(5, 5), vec2_t.new(20, 20), color_t.new(255, 0, 0, 255))
+        end
+        client.register_callback("paint", on_paint)
+    ]]
+    rect_filled = renderer.rect_filled,
+    --[[ 
+        rect_filled_fade(from, to, col_upr_left, col_upr_right, col_bot_right, col_bot_left)
+        Type	Name	Description
+        vec2_t	from	Start position
+        vec2_t	to	End position
+        color_t	col_upr_left	Upper left color
+        color_t	col_upr_right	Upper right color
+        color_t	col_bot_right	Bottom right color
+        color_t	col_bot_left	Bottom left color
+        Drawing the faded rect
+        local function on_paint()
+            renderer.rect_filled_fade(vec2_t.new(5, 5), vec2_t.new(20, 20), color_t.new(255, 0, 0, 255), color_t.new(255, 0, 0, 255), color_t.new(0, 0, 0, 255), color_t.new(0, 0, 0, 255))
+        end
+        client.register_callback("paint", on_paint)
+    ]]
+    rect_filled_fade = renderer.rect_filled_fade,
+    --[[ 
+        circle_fade(pos, radius, color_in, color_out)
+        Type	Name	Description
+        vec2_t	pos	Position
+        number	radius	Circle radius
+        color_t	color_in	Circle color
+        color_t	color_out	Circle color
+        Drawing the faded circle
+        local function on_paint()
+            renderer.circle_fade(vec2_t.new(100, 100), 30, color_t.new(255, 0, 0, 0), color_t.new(255, 0, 0, 255))
+        end
+        client.register_callback("paint", on_paint)
+    ]]
+    circle_fade = renderer.circle_fade,
+    --[[ 
+        circle(pos, radius, segments, filled, color)
+        Type	Name	Description
+        vec2_t	pos	Position
+        number	radius	Circle radius
+        number	segments	Circle segments
+        bool	filled	Filled circle
+        color_t	color	Circle color
+        Drawing the circle
+        local function on_paint()
+            renderer.circle(vec2_t.new(100, 100), 50, 50, false, color_t.new(255, 0, 0, 255))
+        end
+        client.register_callback("paint", on_paint)
+    ]]
+    circle = renderer.circle,
+    --[[ 
+        filled_polygon(points, color)
+        Type	Name	Description
+        vec2_t array	points	Points
+        color_t	color	Color
+        Drawing the textured polygon
+        local function on_paint()
+            -- trigon
+            local points = { vec2_t.new(5, 5), vec2_t.new(15, 5), vec2_t.new(10, 15) }
+            renderer.filled_polygon(points, color_t.new(255, 255, 255, 255))
+        end
+        client.register_callback("paint", on_paint)
+    ]]
+}
+
+local ragebot = {
+    --[[ 
+    ragebot table
+        Info
+        All functions from this table should be called from "create_move" callback.
+    ]]
+    --[[ 
+        Functions
+        ignore_player(index)
+        Type	Name	Description
+        number	index	Entity index
+        Disable ragebot on this player
+        local entity_index = player:get_index()
+        ragebot.ignore_player(entity_index)
+    ]]
+    ignore_player = ragebot.ignore_player,
+    --[[ 
+        override_wall_penetration(index, penetrate)
+        Type	Name	Description
+        number	index	Entity index
+        bool	penetrate	Enables wall penetration on player
+        Overrides wall penetration on player
+        local entity_index = player:get_index()
+        ragebot.override_wall_penetration(entity_index, false) -- disable autowall on this player
+    ]]
+    override_wall_penetration = ragebot.override_wall_penetration,
+    --[[ 
+        override_desync_correction(index, correct)
+        Type	Name	Description
+        number	index	Entity index
+        bool	correct	Enables resolver on player
+        Overrides desync correction on player
+        local entity_index = player:get_index()
+        ragebot.override_desync_correction(entity_index, false) -- disable resolver on
+    ]]
+    override_desync_correction = ragebot.override_desync_correction,
+    --[[ 
+        override_hitscan(index, hitbox, scan)
+        Type	Name	Description
+        number	index	Entity index
+        number	hitbox	Hitbox
+        bool	scan	Enables scan this hitbox
+        Overrides hitscan on player
+        local SCAN_HEAD = 0
+        local SCAN_CHEST = 1
+        local SCAN_PELVIS = 2
+        local SCAN_STOMACH = 3
+        local SCAN_LEGS = 4
+        local SCAN_FOOT = 5
+        -- force head
+        local entity_index = player:get_index()
+        ragebot.override_hitscan(entity_index, SCAN_HEAD, true)
+        ragebot.override_hitscan(entity_index, SCAN_CHEST, false)
+        ragebot.override_hitscan(entity_index, SCAN_PELVIS, false)
+        ragebot.override_hitscan(entity_index, SCAN_STOMACH, false)
+        ragebot.override_hitscan(entity_index, SCAN_LEGS, false)
+        ragebot.override_hitscan(entity_index, SCAN_FOOT, false)
+    ]]
+    override_hitscan = ragebot.override_hitscan,
+    --[[ 
+        override_skip_unsafe_points(index, hitbox, scan)
+        Type	Name	Description
+        number	index	Entity index
+        number	hitbox	Hitbox
+        bool	scan	Enables scan this hitbox
+        Overrides skip unsafe points on player
+        local SCAN_HEAD = 0
+        local SCAN_CHEST = 1
+        local SCAN_PELVIS = 2
+        local SCAN_STOMACH = 3
+        local SCAN_LEGS = 4
+        local SCAN_FOOT = 5
+        local entity_index = player:get_index()
+        ragebot.override_skip_unsafe_points(entity_index, SCAN_HEAD, true)
+        ragebot.override_skip_unsafe_points(entity_index, SCAN_CHEST, false)
+        ragebot.override_skip_unsafe_points(entity_index, SCAN_PELVIS, false)
+        ragebot.override_skip_unsafe_points(entity_index, SCAN_STOMACH, false)
+        ragebot.override_skip_unsafe_points(entity_index, SCAN_LEGS, false)
+        ragebot.override_skip_unsafe_points(entity_index, SCAN_FOOT, false)
+    ]]
+    override_skip_unsafe_points = ragebot.override_skip_unsafe_points,
+    --[[ 
+        override_min_damage(index, damage)
+        Type	Name	Description
+        number	index	Entity index
+        number	damage	Min damage
+        Overrides min damage on player
+        local entity_index = player:get_index()
+        ragebot.override_min_damage(entity_index, 10)
+    ]]
+    override_min_damage = ragebot.override_min_damage,
+    --[[ 
+        override_safe_point(index, mode)
+        Type	Name	Description
+        number	index	Entity index
+        number	mode	Safepoint mode
+        Overrides safepoint mode on player
+        0 - default
+        1 - prefer
+        2 - force
+        local entity_index = player:get_index()
+        ragebot.override_safe_point(entity_index, 2) -- force safepoints
+    ]]
+    override_safe_point = ragebot.override_safe_point,
+    --[[ 
+        override_max_misses(index, misses)
+        Type	Name	Description
+        number	index	Entity index
+        number	misses	Max misses
+        Overrides max misses on player
+        local entity_index = player:get_index()
+        ragebot.override_max_misses(entity_index, 0)
+    ]]
+    override_max_misses = ragebot.override_max_misses,
+    --[[ 
+        override_head_scale(index, scale)
+        Type	Name	Description
+        number	index	Entity index
+        number	scale	Head pointscale
+        Overrides head point scale on player    
+        local entity_index = player:get_index()
+        ragebot.override_head_scale(entity_index, 50)
+    ]]
+    override_head_scale = ragebot.override_head_scale,
+    --[[ 
+        override_body_scale(index, scale)
+        Type	Name	Description
+        number	index	Entity index
+        number	scale	Body pointscale
+        Overrides body point scale on player
+        local entity_index = player:get_index()
+        ragebot.override_body_scale(entity_index, 50)
+    ]]
+    override_body_scale = ragebot.override_body_scale
+}
+
+local vec2_t = {
+    --[[ 
+        new(x, y): vec2_t
+        Type	Name
+        number	x
+        number	y
+        Constructor
+        local vector2d = vec2_t.new(0, 0)
+    ]]
+    new = vec2_t.new,
+    --[[ 
+        length(): number
+        Returns the length of vector
+        local vector = vec2_t.new(100, 100)
+        local vector_length = vector:length()
+    ]]
+}
+
+local vec3_t = {
+    --[[ 
+        new(x, y, z): vec3_t
+        Type	Name
+        number	x
+        number	y
+        number	z
+        Constructor
+        local vector = vec3_t.new(0, 0, 0)
+    ]]
+    new = vec3_t.new,
+    --[[ 
+        length(): number
+        Returns the length of vector
+        local vector = vec3_t.new(100, 100, 100)
+        local vector_length = vector:length()
+        dist_to(other): number
+        Type	Name
+        vec3_t	other
+        Returns the distance between 2 vectors
+        local vector = vec3_t.new(-100, -100, -100)
+        local vector2 = vec3_t.new(100, 100, 100)
+        local distance = vector:dist_to(vector2)
+    ]]
+}
+
+local vec4_t = {
+    --[[ 
+        new(x, y, z, w): vec4_t
+        Type	Name
+        number	x
+        number	y
+        number	z
+        number	w
+        Constructor
+        local vec4 = vec4_t.new(0, 0, 0, 0)
+    ]]
+    new = vec4_t.new
+}
+
+local angle_t = {
+    --[[ 
+        Functions
+        new(pitch, yaw, roll): angle_t
+        Type	Name
+        number	pitch
+        number	yaw
+        number	roll
+        local angle = angle_t.new(0, 0, 0)
+    ]]
+    new = angle_t.new,
+}
+
+--[[ 
+        Type	Name	Description
+        number	red	Red color range as a percentage in the range [0.0, 1.0]
+        number	green	Green color range as a percentage in the range [0.0, 1.0]
+        number	blue	Blue color range as a percentage in the range [0.0, 1.0]
+        number	alpha	Alpha color range as a percentage in the range [0.0, 1.0]
+    ]]
+local color_t = {
+    --[[ 
+        new(red, green, blue, alpha): color_t
+        Type	Name	Description
+        number	red	Red color range as a percentage in the range [0, 255]
+        number	green	Green color range as a percentage in the range [0, 255]
+        number	blue	Blue color range as a percentage in the range [0, 255]
+        number	alpha	Alpha color range as a percentage in the range [0, 255]
+        Constructor
+        local color = color_t.new(255, 0, 0, 255)
+    ]]
+    new = color_t.new
+}
+
+local se = {
+    --[[ 
+        get_int(): number
+        Returns the int value
+        local convar = se.get_convar("r_jiggle_bones")
+        local value = convar:get_int()
+
+        get_float(): number
+        Returns the float value
+        local convar = se.get_convar("r_aspectratio")
+        local value = convar:get_float()
+
+        get_string(): string
+        Returns the string
+        local convar = se.get_convar("sv_skyname")
+        local str = convar:get_string()
+
+        set_int(value)
+        Type	Name
+        number	value
+        Setting the int value
+        local convar = se.get_convar("r_jigglebones")
+        convar:set_int(0)
+
+        set_float(value)
+        Type	Name
+        number	value
+        Setting the float value
+        local convar = se.get_convar("r_aspectratio")
+        convar:set_float(1.333)
+
+        set_string(value)
+        Type	Name
+        string	value
+        Setting the string
+        local convar = se.get_convar("sv_skyname")
+        convar:set_string("sky_dust")
+    ]]
+    convar = se.convar,
+    --[[ 
+        world_to_screen(pos): vec2_t
+        Type	Name	Description
+        vec3_t	pos	World position
+        Returns two screen coordinates vec2_t, or nil if the world position is not visible on your screen.
+
+        local pos2d = se.world_to_screen(pos)
+        if pos2d ~= nil then
+            renderer.text("pos: " .. pos2d.x .. ", " .. pos2d.y, font, pos2d, 0, color_t.new(255, 255, 255, 255))
+        end
+    ]]
+    world_to_screen = se.world_to_screen,
+    --[[ 
+        set_clantag(tag)
+        Type	Name	Description
+        string	tag	Wanted clantag
+        Setting the clantag
+        se.set_clantag("Angelwigs")
+        tab view: 
+            Angelwigs [User]
+            [User] -- no clantag user
+            Otherscript [User]
+    ]]
+    set_clantag = se.set_clantag,
+    --[[ 
+        get_convar(name): convar_t
+        Type	Name	Description
+        string	name	Console variable name
+        Finds convar by name. Returns nil if failed
+        local sv_skyname = se.get_convar("sv_skyname")
+    ]]
+    get_convar = se.get_convar,
+    --[[ 
+        get_netvar(table, netvar): number
+        Type	Name	Description
+        string	table	Table name
+        string	netvar	Netvar name
+        Returns the netvar offset, or nil if failed
+        se.get_netvar("DT_BasePlayer", "m_iHealth")
+    ]]
+    get_netvar = se.get_netvar,
+    --[[ 
+        get_latency(): number
+        Returns current latency
+        local ping = se.get_latency()
+    ]]
+    get_latency = se.get_latency,
+    --[[ 
+        create_interface(module_name, interface_version): number
+        Type	Name	Description
+        string	module_name	Module name
+        string	interface_version	Interface version
+        Returns the interface address
+        local g_model_info = se.create_interface("engine.dll", "VModelInfoClient004")
+    ]]
+    create_interface = se.create_interface
+}
+
+local engine = {
+    --[[ 
+        get_screen_size(): vec2_t
+        Returns the screen size
+        local screen_size = engine.get_screen_size()
+    ]]
+    get_screen_size = engine.get_screen_size,
+    --[[ 
+        is_connected(): bool
+        Returns true if connected to server
+        local is_connected = engine.is_connected()
+    ]]
+    is_connected = engine.is_connected,
+    --[[ 
+        is_in_game(): bool
+        Returns true if in game
+        local is_in_game = engine.is_in_game()
+    ]]
+    is_in_game = engine.is_in_game,
+    --[[ 
+        get_local_player(): number
+        Returns the local player index
+        local lp_index = engine.get_local_player()
+    ]]
+    get_local_player = engine.get_local_player,
+    --[[ 
+        get_player_info(index): player_info_t
+        Type	Name	Description
+        number	index	Entity index
+        Returns the player_info_t object
+        local local_info = engine.get_player_info(engine.get_local_player())
+    ]]
+    get_player_info = engine.get_player_info,
+    --[[ 
+        get_level_name_short(): string
+        Returns current level name (example: de_mirage)
+        local current_map = engine.get_level_name_short()
+    ]]
+    get_level_name_short = engine.get_level_name_short,
+    --[[ 
+        get_player_for_user_id(userid): number
+        Type	Name	Description
+        number	userid	User ID
+        Returns the player index from user id
+        local ent_idx = engine.get_player_for_user_id(userid)
+    ]]
+    get_player_for_user_id = engine.get_player_for_user_id,
+    --[[ 
+        set_view_angles(viewangles)
+        Type	Name	Description
+        angle_t	viewangles	Viewangles
+        Setting the viewangles
+        engine.set_view_angles(angle_t.new(0, 0, 0))
+    ]]
+    set_view_angles = engine.set_view_angles,
+    --[[ 
+        get_view_angles(): angle_t
+        Returns the camera angles
+        local view_ang = engine.get_view_angles()
+    ]]
+    get_view_angles = engine.get_view_angles,
+    --[[ 
+        execute_client_cmd(cmd)
+        Type	Name	Description
+        string	cmd	Console command
+        Executes command in console
+        engine.execute_client_cmd("clear")
+    ]]
+    execute_client_cmd = engine.execute_client_cmd
+}
+
+local trace = {
+    --[[ 
+        line(skip_entindex, mask, start, end): trace_t
+        Type	Name	Description
+        number	skip_entindex	Skip entity index
+        number	mask	Trace mask
+        vec3_t	start	Start trace position
+        vec3_t	end	End trace position
+    ]]
+    line = trace.line,
+    --[[ 
+        hull(mask, start, end, mins, maxs, trace_type, should_hit_entity_callback): trace_t
+        Type	Name	Description
+        number	mask	Trace mask
+        vec3_t	start	Start trace position
+        vec3_t	end	End trace position
+        vec3_t	mins	Trace mins
+        vec3_t	maxs	Trace maxs
+        number	trace_type	Trace filter type
+        function	should_hit_entity_callback	Trace filter callback
+        local trace_out = trace.hull(0x46004003, trace_start, trace_end, vec3_t.new(-5, -5, -5), vec3_t.new(-5, -5, -5), 0, should_hit_ent_fn)
+    ]]
+    hull = trace.hull
+}
+
+local entitylist = {
+    --[[ 
+        get_highest_entity_index(): number
+        Returns the highest entity index
+        local idx = entitylist.get_highest_entity_index()
+    ]]
+    get_highest_entity_index = entitylist.get_highest_entity_index,
+    --[[ 
+        get_local_player(): entity_t
+        Returns the local player object
+        local localplayer = entitylist.get_local_player()
+    ]]
+    get_local_player = entitylist.get_local_player,
+    --[[ 
+        get_entity_by_index(index): entity_t
+        Type	Name	Description
+        number	index	Entity index
+        Returns the entity_t object by index
+        local lp = entitylist.get_entity_by_index(entitylist.get_local_player())
+    ]]
+    get_entity_by_index = entitylist.get_entity_by_index,
+    --[[ 
+        get_entity_from_handle(handle): entity_t
+        Type	Name	Description
+        number	handle	Entity handle
+        Returns the entity_t object by handle
+        local m_hActiveWeapon = se.get_netvar("DT_BaseCombatCharacter", "m_hActiveWeapon")
+        -- getting local weapon
+        local active_weapon_handle = local_player:get_prop_int(m_hActiveWeapon)
+        local active_weapon = entitylist.get_entity_from_handle(active_weapon_handle)
+    ]]
+    get_entity_from_handle = entitylist.get_entity_from_handle,
+    --[[ 
+        get_players(type): entity_t array
+        Type	Name	Description
+        number	type	Type
+        Returns the players array
+        0 - enemies only
+        1 - teammates only
+        2 - all players
+        local players = entitylist.get_players(0)
+        for i = 1, #players do
+            local player = players[i]
+        end
+    ]]
+    get_players = entitylist.get_players,
+    --[[ 
+        get_entities_by_class_name(classname): entity_t array
+        Type	Name	Description
+        string	classname	Class name
+        Returns the entities array by class name
+        local entities = entitylist.get_entities_by_class_name("CFogController")
+    ]]
+    get_entities_by_class_name = entitylist.get_entities_by_class_name,
+    --[[ 
+        get_entities_by_class_id(classid): entity_t array
+        Type	Name	Description
+        number	classid	Class id
+        Returns the entities array by class id
+        local entities = entitylist.get_entities_by_class_id(78)
+    ]]
+    get_entities_by_class_id = entitylist.get_entities_by_class_id
+}
+
+local globalvars = {
+    --[[ 
+        get_real_time(): number
+        Returns the client time
+        local rt = globalvars.get_real_time()
+    ]]
+    get_real_time = globalvars.get_real_time,
+    --[[ 
+        get_frame_count(): number
+        Returns the frame count
+        local frame_count = globalvars.frame_count()
+    ]]
+    get_frame_count = globalvars.get_frame_count,
+    --[[ 
+        get_absolute_frametime(): number
+        Returns the absolute frame time
+        local absolute_frametime = globalvars.get_absolute_frametime()
+    ]]
+    get_absolute_frametime = globalvars.get_absolute_frametime,
+    --[[ 
+        get_current_time(): number
+        Returns the server time
+        local current_time = globalvars.get_current_time()
+    ]]
+    get_current_time = globalvars.get_current_time,
+    --[[ 
+        get_frame_time(): number
+        Returns the frame time
+        local frame_time = globalvars.get_frame_time()
+    ]]
+    get_frame_time = globalvars.get_frame_time,
+    --[[ 
+        get_max_clients(): number
+        Returns the max clients value
+        local max_clients = globalvars.get_max_clients()
+    ]]
+    get_max_clients = globalvars.get_max_clients,
+    --[[ 
+        get_tick_count(): number
+        Returns the current tickcount
+        local tick_count = globalvars.get_tick_count()
+    ]]
+    get_tick_count = globalvars.get_tick_count,
+    --[[ 
+        get_interval_per_tick(): number
+        Returns the interval per tick
+        local tick_count = globalvars.get_interval_per_tick()
+    ]]
+    get_interval_per_tick = globalvars.get_interval_per_tick
+}
+
+local clientstate = {
+    -- get_choked_commands(): number
+    -- Returns the number of choked commands
+    get_choked_commands = clientstate.get_choked_commands,
+    --[[ 
+        force_full_update()
+        Forcing cl_fullupdate
+        clientstate.force_full_update()
+    ]]
+    force_full_update = clientstate.force_full_update
+}
+
+return {
+    ui,
+    client,
+    renderer,
+    ragebot,
+    vec2_t,
+    vec3_t,
+    vec4_t,
+    angle_t,
+    color_t,
+    se,
+    engine,
+    trace,
+    entitylist,
+    globalvars,
+    clientstate,
+}
