@@ -1,0 +1,222 @@
+local m_iHealth = se.get_netvar("DT_BasePlayer", "m_iHealth")
+local m_vecOrigin = se.get_netvar("DT_BaseEntity", "m_vecOrigin")
+local m_vecVelocity = {
+    [0] = se.get_netvar("DT_BasePlayer", "m_vecVelocity[0]"),
+    [1] = se.get_netvar("DT_BasePlayer", "m_vecVelocity[1]"),
+}
+
+local data = nil
+
+local is_shot = false
+local is_toggled = false
+
+local function draw_circle_3d(pos, points, radius, clr, filled, filled_clr)
+    local step = math.pi * 2 / points
+    local vec_points = {}
+    local z = pos.z
+    local traceline = trace.line(-1, -1, vec3_t.new(pos.x, pos.y, pos.z+256/2), vec3_t.new(pos.x, pos.y, pos.z-256/2))
+
+    if traceline.fraction > 0 and 1 > traceline.fraction then
+        z = z+256/2-(256 * traceline.fraction)
+    end
+    for i = 0.0, math.pi * 2.0, step do
+        local start = vec3_t.new(
+            radius * math.cos(i) + pos.x,
+            radius * math.sin(i) + pos.y,
+            z
+        )
+        local start2d = se.world_to_screen(start)
+        if start2d then
+            table.insert(vec_points, start2d)
+        end
+    end
+    if filled then
+        renderer.filled_polygon(vec_points, filled_clr)
+    end
+    for i = 1, #vec_points, 1 do
+        local point = vec_points[i]
+        local next_point = vec_points[i + 1] and vec_points[i + 1] or vec_points[1]
+
+        renderer.line(point, next_point, clr)
+    end
+end
+local _radius = 0
+local function clamp(value, min, max)
+    if value > max then return max end
+    if value < min then return min end
+    return value
+end
+local function on_paint15()
+    local max_radius = menudia.Misc.radius3:get_value()
+    
+    if menudia.Misc.animation:get_value() and is_toggled then
+        _radius = clamp(_radius + 1, 0, max_radius)
+    elseif not menudia.Misc.animation:get_value() and is_toggled then
+        _radius = max_radius
+    end
+
+    if _radius == 0 then return end
+
+    if not is_toggled and menudia.Misc.animation:get_value() then
+        _radius = clamp(_radius - 1, 0, max_radius)
+    elseif not is_toggled and not menudia.Misc.animation:get_value() then 
+        _radius = 0
+    end
+
+    local pos = se.world_to_screen(data)
+
+    if pos.x == nil or pos.y == nil then return end
+
+    local color7 = is_shot and menudia.Colors.second_color:get_value() or menudia.Colors.first_color:get_value()
+
+    if menudia.Misc.misc_autopeek_render_type:get_value() == 1 then
+        draw_circle_3d(data, 100, _radius, color7, menudia.Misc.is_filled:get_value(), color7)
+    end
+    if menudia.Misc.misc_autopeek_render_type:get_value() == 2 then
+        renderer.circle(pos, _radius, 25, menudia.Misc.is_filled:get_value(), color7)
+    end
+end 
+
+local time = nil
+
+local function on_shot2(event)
+    local target = engine.get_player_for_user_id(event:get_int("userid", 0))
+    local me = engine.get_local_player()
+
+    if event:get_name() == "weapon_fire" and me == target then
+        is_shot = true
+
+        time = globalvars.get_current_time()
+    end
+end
+
+local function main3(user)
+    local me = entitylist.get_entity_by_index(engine.get_local_player())
+
+    if not me:is_alive() then 
+        is_toggled = false
+        is_shot = false
+    end
+
+    if me:get_prop_int(m_iHealth) < 1 then return end
+
+    local vec3 = me:get_prop_vector(m_vecOrigin)
+    local current_pos = vec3
+
+    if menudia.Binds.lua_re_autopeek:is_active() and not is_toggled then
+        is_toggled = true
+        is_shot = false
+
+        data = vec3
+    elseif not menudia.Binds.lua_re_autopeek:is_active() and is_toggled then
+        is_toggled = false
+        is_shot = false
+    end
+
+    if is_shot and is_toggled then
+        local vec_forward = {
+            x = current_pos.x - data.x,
+            y = current_pos.y - data.y,
+            z = current_pos.z - data.z,
+        }
+
+        local yaw = engine.get_view_angles().yaw
+
+        local t_velocity = {
+            x = vec_forward.x * math.cos(yaw / 180 * math.pi) + vec_forward.y * math.sin(yaw / 180 * math.pi),
+            y = vec_forward.y * math.cos(yaw / 180 * math.pi) - vec_forward.x * math.sin(yaw / 180 * math.pi),
+            z = vec_forward.z,
+        }
+
+        user.forwardmove = -t_velocity.x * 20
+        user.sidemove = t_velocity.y * 20
+
+        velocity = math.sqrt(me:get_prop_float(m_vecVelocity[0]) ^ 2 + me:get_prop_float(m_vecVelocity[1]) ^ 2);
+
+        if velocity < 3 and globalvars.get_current_time() - time > 0.5 then
+            is_shot = false
+        end
+    end
+end
+
+local autopeek_accuracy = 20.0
+local autopeek_pos = vec3_t.new(0, 0, 0)
+local autopeek_return = false
+local autopeek_last_shot = 0
+local m_bSpotted = se.get_netvar("DT_BaseEntity", "m_bSpotted")
+local m_vecOrigin = se.get_netvar("DT_BaseEntity", "m_vecOrigin")
+local m_fLastShotTime = se.get_netvar("DT_WeaponCSBase", "m_fLastShotTime")
+local m_iHealth = se.get_netvar("DT_BasePlayer", "m_iHealth")
+local m_vecVelocity = se.get_netvar("DT_BasePlayer", "m_vecVelocity[0]")
+local m_iTeamNum = se.get_netvar("DT_BaseEntity", "m_iTeamNum")
+local m_hActiveWeapon = se.get_netvar("DT_BaseCombatCharacter", "m_hActiveWeapon")
+local m_iItemDefinitionIndex = se.get_netvar("DT_BaseAttributableItem", "m_iItemDefinitionIndex")
+local m_flDuckAmount = se.get_netvar("DT_BasePlayer", "m_flDuckAmount");
+
+local function on_events(event)
+	if event:get_name() == "weapon_fire" then
+		player_shots[engine.get_player_for_user_id(event:get_int("userid", 0))] = globalvars.get_current_time()
+	end
+	if event:get_name() == "player_death" then
+		local local_player_userid = engine.get_player_info(engine.get_local_player()).user_id
+		local event_userid = event:get_int("userid", 0)
+		
+		if local_player_userid == event_userid then 
+			autopeek_return = false
+			autopeek_pos = vec3_t.new(0, 0, 0)
+			autopeek_last_shot = 0
+		end
+	end
+	if event:get_name() == "player_spawn" then
+		local local_player_userid = engine.get_player_info(engine.get_local_player()).user_id
+		local event_userid = event:get_int("userid", 0)
+		if local_player_userid == event_userid then 
+			knifebot_target = 0
+			knifebot_attack_time = 0.0
+			autopeek_return = false
+			autopeek_pos = vec3_t.new(0, 0, 0)
+			autopeek_last_shot = 0
+		end
+	end
+end
+
+local function autopeek_me_ver(cmd)
+	if not autopeek_return then
+		local weapon = entitylist.get_entity_from_handle(entitylist.get_local_player():get_prop_int(se.get_netvar("DT_BaseCombatCharacter", "m_hActiveWeapon")))
+		local last_shot = weapon:get_prop_float(m_fLastShotTime)
+		if last_shot > autopeek_last_shot then
+			autopeek_last_shot = last_shot
+			autopeek_return = true
+		end
+	end
+	if menudia.Binds.lua_re_autopeek:is_active() then
+		if autopeek_pos:length() == 0 then
+			autopeek_pos = entitylist.get_local_player():get_prop_vector(m_vecOrigin)
+		end
+	else
+		autopeek_return = false
+		autopeek_pos = vec3_t.new(0, 0, 0)
+	end
+	if autopeek_return then
+		local pos4 = entitylist.get_local_player():get_prop_vector(m_vecOrigin)
+		if pos4:dist_to(autopeek_pos) > autopeek_accuracy then
+			local direction = vec3_t.new(pos4.x - autopeek_pos.x, pos4.y - autopeek_pos.y, pos4.z - autopeek_pos.z)
+			direction = vec3_t.new(direction.x / direction:length(), direction.y / direction:length(), direction.z / direction:length())
+			local rx = direction.x * math.cos(engine.get_view_angles().yaw / 180.0 * math.pi) + direction.y * math.sin(engine.get_view_angles().yaw / 180.0 * math.pi)
+			local ry = direction.y * math.cos(engine.get_view_angles().yaw / 180.0 * math.pi) - direction.x * math.sin(engine.get_view_angles().yaw / 180.0 * math.pi)
+			cmd.forwardmove = -rx * 255.0
+			cmd.sidemove = ry * 255.0
+		else
+			if entitylist.get_local_player():get_prop_vector(m_vecVelocity):length() < 60.0 then
+				autopeek_return = false
+			elseif entitylist.get_local_player():get_prop_vector(m_vecVelocity):length() > 180.0 then
+				autopeek_return = true
+			end	
+		end
+	end
+end
+
+client.register_callback("create_move", autopeek_me_ver)
+client.register_callback("fire_game_event", on_shot2)
+client.register_callback("create_move", main3)
+client.register_callback("paint", on_paint15)
