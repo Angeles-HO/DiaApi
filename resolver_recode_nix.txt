@@ -46,8 +46,62 @@ local property_cache = {}
 local resolver_accuracy = {}
 local last_resolver_adjustment = {}
 local player_backup = {}
+local SCAN_HEAD = 0
+local SCAN_CHEST = 1
+local SCAN_PELVIS = 2
+local SCAN_STOMACH = 3
+local SCAN_LEGS = 4
+local SCAN_FOOT = 5
 
+local entity_index = player:get_index()
 -- Funciones principales
+
+-- Ajuste dinámico de escalas basado en velocidad y estado del enemigo
+local function adjust_hitbox_scales(entity)
+    if not entity or entity:is_dormant() then return end
+
+    local velocity = entity:get_prop_float("m_vecVelocity[0]")
+    local index = entity:get_index()
+
+    if velocity > 250 then
+        ragebot.override_head_scale(index, math.random(10, 40))
+        ragebot.override_body_scale(index, math.random(60, 80))
+    else
+        ragebot.override_head_scale(index, math.random(50, 100))
+        ragebot.override_body_scale(index, math.random(50, 70))
+    end
+end
+
+-- Obtener condiciones clave del enemigo para usar en ajustes dinámicos
+local function get_enemy_conditions(entity)
+    if not entity then return nil end
+
+    return {
+        is_dormant = entity:is_dormant(),
+        velocity = entity:get_prop_float("m_vecVelocity[0]"),
+        is_fakewalking = entity:get_prop_bool("m_bFakeWalking"),
+        body_yaw = entity:get_pose_value(11),
+        head_pos = entity:get_player_hitbox_pos(SCAN_HEAD),
+        chest_pos = entity:get_player_hitbox_pos(SCAN_CHEST),
+    }
+end
+
+-- Configuración de hitscan basada en condiciones
+
+local function configure_hitscan(entity, conditions)
+    local index = entity:get_index()
+
+    if conditions.velocity > 250 then
+        ragebot.override_hitscan(index, SCAN_HEAD, false)
+        ragebot.override_hitscan(index, SCAN_CHEST, true)
+        ragebot.override_hitscan(index, SCAN_PELVIS, true)
+    else
+        ragebot.override_hitscan(index, SCAN_HEAD, true)
+        ragebot.override_hitscan(index, SCAN_CHEST, false)
+        ragebot.override_hitscan(index, SCAN_PELVIS, false)
+    end
+end
+
 local function backup_player_data(player)
     if not resolver_menu.backup_restore:get() then return end
     local index = player:get_index()
@@ -109,17 +163,6 @@ local function on_player_hurt(event)
     end
 end
 
---[[ 
-hay que usar algo como esto:
-Is_fake_ducking = function(entity)
-    -- Check if the entity is fake-ducking (not in air, with specific duck speed/amount)
-    if entity then
-        local duck_speed = entity:get_prop("m_flDuckSpeed"):get_float()
-        local duck_amount = entity:get_prop("m_flDuckAmount"):get_float()
-        return duck_speed == 8 and duck_amount > 0 and not Is_inair(entity)
-    end
-    return false
-end
 
 local function on_player_jump(event)
     
@@ -130,7 +173,7 @@ local function on_player_jump(event)
         local yaw = get_cached_property(jumper, "m_angEyeAngles[1]", 0)
         player_yaw_cache[index] = normalize_yaw(yaw + 15)
     end
-end ]]
+end 
 
 -- Resolver principal
 local function resolve_enemy(cmd)
@@ -208,4 +251,5 @@ client.register_callback("fire_game_event", on_player_hurt)
 client.register_callback("fire_game_event", on_enemy_shot)
 client.register_callback("create_move", prevent_frequent_adjustments)
 client.register_callback("create_move", resolve_enemy)
+
 
