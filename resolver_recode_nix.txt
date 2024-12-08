@@ -1,0 +1,211 @@
+--[[ beta resolver with various features for nixware software ARG PAAPAA ]]--
+local function add_slider(label, key, min, max, default)
+    return ui.add_slider_int(label, key, min, max, default)
+end
+
+local function add_checkbox(label, key, bool)
+    return ui.add_check_box(label, key, bool)
+end
+
+local function normalize_yaw(yaw)
+    while yaw > 180 do yaw = yaw - 360 end
+    while yaw < -180 do yaw = yaw + 360 end
+    return yaw
+end
+
+local function calculate_angle_difference(yaw1, yaw2)
+    return normalize_yaw(yaw1 - yaw2)
+end
+
+local function analyze_pose(player)
+    local pose_11 = player:get_pose_param(11) or 0.5 -- Valor por defecto
+    if math.abs(pose_11 - 0.5) < 0.1 then
+        return "not breaking LBY"
+    elseif pose_11 < 0.1 or pose_11 > 0.9 then
+        return "breaking LBY"
+    end
+    return "unknown"
+end
+
+-- Menu principal
+local resolver_menu = {
+    enabled = add_checkbox("Resolvers", "resolver_enabled", false),
+    logging = add_checkbox("Enable Logs", "resolver_logging", false),
+    invert = add_checkbox("Invert Resolver", "resolver_invert", false),
+    dynamic = add_checkbox("Dynamic Resolver", "resolver_dynamic", false),
+    yaw_offset = add_slider("Yaw Offset", "Yaw_Offset", -60, 60, 0),
+    accuracy_threshold = add_slider("Accuracy Threshold", 1, 0, 100),
+    backup_restore = add_checkbox("Enable Backup & Restore", "backup_restore", false),
+    max_players = add_slider("Max Players to Resolve", 1, 1, 10),
+    tick_analysis = add_slider("Tick Analysis Intensity", "tick_analysis", 1, 10, 1)
+}
+
+-- Variables globales, almacenar y modificar datos
+local player_yaw_cache = {}
+local property_cache = {}
+local resolver_accuracy = {}
+local last_resolver_adjustment = {}
+local player_backup = {}
+
+-- Funciones principales
+local function backup_player_data(player)
+    if not resolver_menu.backup_restore:get() then return end
+    local index = player:get_index()
+    player_backup[index] = {
+        angles = player:get_prop("m_angEyeAngles"),
+        velocity = player:get_prop("m_vecVelocity"),
+        duck_amount = player:get_prop("m_flDuckAmount"),
+        simulation_time = player:get_prop("m_flSimulationTime"),
+    }
+end
+
+local function restore_player_data(player)
+    if not resolver_menu.backup_restore:get() then return end
+    local index = player:get_index()
+    if not player_backup[index] then return end
+
+    player:set_prop("m_angEyeAngles", player_backup[index].angles)
+    player:set_prop("m_vecVelocity", player_backup[index].velocity)
+    player:set_prop("m_flDuckAmount", player_backup[index].duck_amount)
+    player:set_prop("m_flSimulationTime", player_backup[index].simulation_time)
+end
+
+local function get_cached_property(entity, property, refresh_rate)
+    local index = entity:get_index()
+    if not property_cache[index] then property_cache[index] = {} end
+
+    local cache_entry = property_cache[index][property]
+    local current_time = globalvars.get_current_time()
+
+    if not cache_entry or (current_time - cache_entry.timestamp > refresh_rate) then
+        local value = entity:get_prop(property)
+        property_cache[index][property] = { value = value, timestamp = current_time }
+        return value
+    else
+        return cache_entry.value
+    end
+end
+
+local function adjust_based_on_accuracy(index, current_yaw)
+    local accuracy = resolver_accuracy[index] or 0
+    if accuracy < resolver_menu.accuracy_threshold:get() then
+        current_yaw = normalize_yaw(current_yaw + 180)
+        resolver_accuracy[index] = accuracy + 1
+    else
+        resolver_accuracy[index] = 0
+    end
+    return current_yaw
+end
+
+local function on_player_hurt(event)
+    local hurt_id = engine.get_player_for_user_id(event:get_int("userid"))
+    local attacker_id = engine.get_player_for_user_id(event:get_int("attacker"))
+    if attacker_id == entity.get_local_player():get_index() then
+        local hurt_player = entity.get_player(hurt_id)
+        if hurt_player then
+            local index = hurt_player:get_index()
+            resolver_accuracy[index] = (resolver_accuracy[index] or 0) + 1
+        end
+    end
+end
+
+--[[ 
+hay que usar algo como esto:
+Is_fake_ducking = function(entity)
+    -- Check if the entity is fake-ducking (not in air, with specific duck speed/amount)
+    if entity then
+        local duck_speed = entity:get_prop("m_flDuckSpeed"):get_float()
+        local duck_amount = entity:get_prop("m_flDuckAmount"):get_float()
+        return duck_speed == 8 and duck_amount > 0 and not Is_inair(entity)
+    end
+    return false
+end
+
+local function on_player_jump(event)
+    
+    local jump_id = engine.get_player_for_user_id(event:get_int("userid"))
+    local jumper = entity.get_player(jump_id)
+    if jumper then
+        local index = jumper:get_index()
+        local yaw = get_cached_property(jumper, "m_angEyeAngles[1]", 0)
+        player_yaw_cache[index] = normalize_yaw(yaw + 15)
+    end
+end ]]
+
+-- Resolver principal
+local function resolve_enemy(cmd)
+    if not resolver_menu.enabled:get() then return end
+
+    local local_player = entity.get_local_player()
+    if not local_player then return end
+
+    local max_players_to_resolve = resolver_menu.max_players:get()
+    local resolved_players = 0
+
+    local intensity = resolver_menu.tick_analysis:get()
+
+    for i = 1, engine.get_max_players(), intensity do
+        if resolved_players >= max_players_to_resolve then break end
+
+        local player = entity.get_player(i)
+        if not player or not player:is_alive() or player:get_team() == local_player:get_team() then goto continue end
+
+        local index = player:get_index()
+        backup_player_data(player)
+
+        local current_yaw = get_cached_property(player, "m_angEyeAngles[1]", 0.1)
+        local last_yaw = player_yaw_cache[index] or current_yaw
+        local yaw_difference = calculate_angle_difference(current_yaw, last_yaw)
+
+        -- Ajustes dinámicos
+        local player_count = engine.get_max_players()
+        current_yaw = (player_count > resolver_menu.max_players:get()) and normalize_yaw(current_yaw + 10) or normalize_yaw(current_yaw + resolver_menu.yaw_offset:get())
+
+        if resolver_menu.dynamic:get() then
+            local velocity = get_cached_property(player, "m_vecVelocity", 0.1):length()
+            local is_crouching = get_cached_property(player, "m_flDuckAmount", 0.1) > 0
+            if velocity > 60 then
+                current_yaw = normalize_yaw(current_yaw + 30)
+            elseif is_crouching then
+                current_yaw = normalize_yaw(current_yaw - 30)
+            end
+        end
+
+        current_yaw = adjust_based_on_accuracy(index, current_yaw)
+        cmd:set_view_angle(current_yaw)
+        player_yaw_cache[index] = current_yaw
+        restore_player_data(player)
+        resolved_players = resolved_players + 1
+
+        ::continue::
+    end
+end
+
+local function on_enemy_shot(event)
+    local event_name = event:get_name()
+    if event_name == "weapon_fire" then
+        local shooter_id = engine.get_player_for_user_id(event:get_int("userid"))
+        local shooter = entity.get_player(shooter_id)
+        if shooter then
+            local yaw = get_cached_property(shooter, "m_angEyeAngles[1]", 0)
+            player_yaw_cache[shooter:get_index()] = yaw
+        end
+    end
+end
+
+-- Sistema para evitar ajustes repetidos en cada tick
+local function prevent_frequent_adjustments(index)
+    local current_time = globalvars.get_current_time()
+    if not last_resolver_adjustment[index] or (current_time - last_resolver_adjustment[index] > 0.2) then
+        last_resolver_adjustment[index] = current_time
+        return true
+    end
+    return false
+end
+
+--client.register_callback("fire_game_event", on_player_jump) falta la condicion de si esta saltando la entidad
+client.register_callback("fire_game_event", on_player_hurt)
+client.register_callback("fire_game_event", on_enemy_shot)
+client.register_callback("create_move", prevent_frequent_adjustments)
+client.register_callback("create_move", resolve_enemy)
+
