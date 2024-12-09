@@ -1,4 +1,14 @@
---[[ beta resolver with various features for nixware software ARG PAAPAA ]]--
+--[[ Beta resolver with various features for nixware software ARG PAAPAA ]]--
+
+-- Librerías y FFI para optimización
+local ffi = require("ffi")
+ffi.cdef[[
+    typedef struct { float x, y, z; } vec3_t;
+    float atan2(float y, float x);
+    float sqrt(float x);
+]]
+
+-- Configuración del menú
 local function add_slider(label, key, min, max, default)
     return ui.add_slider_int(label, key, min, max, default)
 end
@@ -7,6 +17,25 @@ local function add_checkbox(label, key, bool)
     return ui.add_check_box(label, key, bool)
 end
 
+local resolver_menu = {
+    enabled = add_checkbox("Resolvers", "resolver_enabled", false),
+    logging = add_checkbox("Enable Logs", "resolver_logging", false),
+    invert = add_checkbox("Invert Resolver", "resolver_invert", false),
+    dynamic = add_checkbox("Dynamic Resolver", "resolver_dynamic", false),
+    yaw_offset = add_slider("Yaw Offset", "Yaw_Offset", -60, 60, 0),
+    accuracy_threshold = add_slider("Accuracy Threshold", "accuracy_threshold", 0, 100, 1),
+    backup_restore = add_checkbox("Enable Backup & Restore", "backup_restore", false),
+    max_players = add_slider("Max Players to Resolve", "max_players", 1, 10, 5),
+    tick_analysis = add_slider("Tick Analysis Intensity", "tick_analysis", 1, 10, 1)
+}
+
+-- Variables globales, almacenar y modificar datos
+local player_yaw_cache = {}
+local property_cache = {}
+local resolver_accuracy = {}
+local player_backup = {}
+
+-- Funciones Auxiliares
 local function normalize_yaw(yaw)
     while yaw > 180 do yaw = yaw - 360 end
     while yaw < -180 do yaw = yaw + 360 end
@@ -17,113 +46,13 @@ local function calculate_angle_difference(yaw1, yaw2)
     return normalize_yaw(yaw1 - yaw2)
 end
 
-local function analyze_pose(player)
-    local pose_11 = player:get_pose_param(11) or 0.5 -- Valor por defecto
-    if math.abs(pose_11 - 0.5) < 0.1 then
-        return "not breaking LBY"
-    elseif pose_11 < 0.1 or pose_11 > 0.9 then
-        return "breaking LBY"
-    end
-    return "unknown"
-end
-
--- Menu principal
-local resolver_menu = {
-    enabled = add_checkbox("Resolvers", "resolver_enabled", false),
-    logging = add_checkbox("Enable Logs", "resolver_logging", false),
-    invert = add_checkbox("Invert Resolver", "resolver_invert", false),
-    dynamic = add_checkbox("Dynamic Resolver", "resolver_dynamic", false),
-    yaw_offset = add_slider("Yaw Offset", "Yaw_Offset", -60, 60, 0),
-    accuracy_threshold = add_slider("Accuracy Threshold", 1, 0, 100),
-    backup_restore = add_checkbox("Enable Backup & Restore", "backup_restore", false),
-    max_players = add_slider("Max Players to Resolve", 1, 1, 10),
-    tick_analysis = add_slider("Tick Analysis Intensity", "tick_analysis", 1, 10, 1)
-}
-
--- Variables globales, almacenar y modificar datos
-local player_yaw_cache = {}
-local property_cache = {}
-local resolver_accuracy = {}
-local last_resolver_adjustment = {}
-local player_backup = {}
-local SCAN_HEAD = 0
-local SCAN_CHEST = 1
-local SCAN_PELVIS = 2
-local SCAN_STOMACH = 3
-local SCAN_LEGS = 4
-local SCAN_FOOT = 5
-
-local entity_index = player:get_index()
--- Funciones principales
-
--- Ajuste dinámico de escalas basado en velocidad y estado del enemigo
-local function adjust_hitbox_scales(entity)
-    if not entity or entity:is_dormant() then return end
-
-    local velocity = entity:get_prop_float("m_vecVelocity[0]")
-    local index = entity:get_index()
-
-    if velocity > 250 then
-        ragebot.override_head_scale(index, math.random(10, 40))
-        ragebot.override_body_scale(index, math.random(60, 80))
-    else
-        ragebot.override_head_scale(index, math.random(50, 100))
-        ragebot.override_body_scale(index, math.random(50, 70))
+local function log_event(message)
+    if resolver_menu.logging:get() then
+        print("[Resolver]: " .. message)
     end
 end
 
--- Obtener condiciones clave del enemigo para usar en ajustes dinámicos
-local function get_enemy_conditions(entity)
-    if not entity then return nil end
-
-    return {
-        is_dormant = entity:is_dormant(),
-        velocity = entity:get_prop_float("m_vecVelocity[0]"),
-        is_fakewalking = entity:get_prop_bool("m_bFakeWalking"),
-        body_yaw = entity:get_pose_value(11),
-        head_pos = entity:get_player_hitbox_pos(SCAN_HEAD),
-        chest_pos = entity:get_player_hitbox_pos(SCAN_CHEST),
-    }
-end
-
--- Configuración de hitscan basada en condiciones
-
-local function configure_hitscan(entity, conditions)
-    local index = entity:get_index()
-
-    if conditions.velocity > 250 then
-        ragebot.override_hitscan(index, SCAN_HEAD, false)
-        ragebot.override_hitscan(index, SCAN_CHEST, true)
-        ragebot.override_hitscan(index, SCAN_PELVIS, true)
-    else
-        ragebot.override_hitscan(index, SCAN_HEAD, true)
-        ragebot.override_hitscan(index, SCAN_CHEST, false)
-        ragebot.override_hitscan(index, SCAN_PELVIS, false)
-    end
-end
-
-local function backup_player_data(player)
-    if not resolver_menu.backup_restore:get() then return end
-    local index = player:get_index()
-    player_backup[index] = {
-        angles = player:get_prop("m_angEyeAngles"),
-        velocity = player:get_prop("m_vecVelocity"),
-        duck_amount = player:get_prop("m_flDuckAmount"),
-        simulation_time = player:get_prop("m_flSimulationTime"),
-    }
-end
-
-local function restore_player_data(player)
-    if not resolver_menu.backup_restore:get() then return end
-    local index = player:get_index()
-    if not player_backup[index] then return end
-
-    player:set_prop("m_angEyeAngles", player_backup[index].angles)
-    player:set_prop("m_vecVelocity", player_backup[index].velocity)
-    player:set_prop("m_flDuckAmount", player_backup[index].duck_amount)
-    player:set_prop("m_flSimulationTime", player_backup[index].simulation_time)
-end
-
+-- Sistema de Caché
 local function get_cached_property(entity, property, refresh_rate)
     local index = entity:get_index()
     if not property_cache[index] then property_cache[index] = {} end
@@ -140,6 +69,29 @@ local function get_cached_property(entity, property, refresh_rate)
     end
 end
 
+-- Respaldo y Restauración de Datos
+local function backup_player_data(player)
+    if not resolver_menu.backup_restore:get() then return end
+    local index = player:get_index()
+    player_backup[index] = {
+        angles = player:get_prop("m_angEyeAngles"),
+        velocity = player:get_prop("m_vecVelocity"),
+        duck_amount = player:get_prop("m_flDuckAmount"),
+        simulation_time = player:get_prop("m_flSimulationTime")
+    }
+end
+
+local function restore_player_data(player)
+    if not resolver_menu.backup_restore:get() then return end
+    local index = player:get_index()
+    if not player_backup[index] then return end
+
+    player:set_prop("m_angEyeAngles", player_backup[index].angles)
+    player:set_prop("m_vecVelocity", player_backup[index].velocity)
+    player:set_prop("m_flDuckAmount", player_backup[index].duck_amount)
+    player:set_prop("m_flSimulationTime", player_backup[index].simulation_time)
+end
+
 local function adjust_based_on_accuracy(index, current_yaw)
     local accuracy = resolver_accuracy[index] or 0
     if accuracy < resolver_menu.accuracy_threshold:get() then
@@ -151,31 +103,63 @@ local function adjust_based_on_accuracy(index, current_yaw)
     return current_yaw
 end
 
-local function on_player_hurt(event)
-    local hurt_id = engine.get_player_for_user_id(event:get_int("userid"))
-    local attacker_id = engine.get_player_for_user_id(event:get_int("attacker"))
-    if attacker_id == entity.get_local_player():get_index() then
-        local hurt_player = entity.get_player(hurt_id)
-        if hurt_player then
-            local index = hurt_player:get_index()
-            resolver_accuracy[index] = (resolver_accuracy[index] or 0) + 1
-        end
-    end
+-- Prediccion de Movimiento
+local function predict_player_movement(player)
+    local index = player:get_index()
+    local backup = player_backup[index]
+    if not backup then return nil end
+
+    -- bbtener propiedades
+    local current_position = player:get_prop("m_vecOrigin")
+    local current_velocity = player:get_prop("m_vecVelocity")
+    local current_yaw = get_cached_property(player, "m_angEyeAngles[1]")
+    local current_time = globalvars.get_current_time()
+
+    -- calcular aceleracio
+    local previous_velocity = player_backup[index].velocity
+    local delta_time = current_time - player_backup[index].simulation_time
+    local acceleration = (current_velocity - previous_velocity) / delta_time
+
+    -- Predecir vector
+    local predicted_position = {
+        x = current_position.x + current_velocity.x * 0.1 + 0.5 * acceleration.x * 0.1^2,
+        y = current_position.y + current_velocity.y * 0.1 + 0.5 * acceleration.y * 0.1^2,
+        z = current_position.z + current_velocity.z * 0.1 + 0.5 * acceleration.z * 0.1^2
+    }
+
+    -- Ajustar la prediccio segun el yaw
+    local yaw_delta = current_yaw - player_backup[index].angles.y
+    local yaw_rad = math.rad(yaw_delta)
+    local rotation_matrix = {
+        {math.cos(yaw_rad), -math.sin(yaw_rad)},
+        {math.sin(yaw_rad), math.cos(yaw_rad)}
+    }
+    local rotated_velocity = {
+        x = rotation_matrix[1][1] * current_velocity.x + rotation_matrix[1][2] * current_velocity.y,
+        y = rotation_matrix[2][1] * current_velocity.x + rotation_matrix[2][2] * current_velocity.y
+    }
+    predicted_position.x = predicted_position.x + rotated_velocity.x * 0.1
+    predicted_position.y = predicted_position.y + rotated_velocity.y * 0.1
+
+    return predicted_position
 end
 
+-- Comparacion de Datos Respaldados
+local function compare_with_backup(player)
+    local index = player:get_index()
+    local backup = player_backup[index]
+    if not backup then return nil end
 
-local function on_player_jump(event)
-    
-    local jump_id = engine.get_player_for_user_id(event:get_int("userid"))
-    local jumper = entity.get_player(jump_id)
-    if jumper then
-        local index = jumper:get_index()
-        local yaw = get_cached_property(jumper, "m_angEyeAngles[1]", 0)
-        player_yaw_cache[index] = normalize_yaw(yaw + 15)
-    end
-end 
+    local differences = {
+        yaw_difference = calculate_angle_difference(backup.angles.y, player:get_prop("m_angEyeAngles[1]")),
+        velocity_difference = player:get_prop("m_vecVelocity"):length() - backup.velocity:length(),
+        duck_change = player:get_prop("m_flDuckAmount") - backup.duck_amount
+    }
 
--- Resolver principal
+    return differences
+end
+
+-- Resolver Principal
 local function resolve_enemy(cmd)
     if not resolver_menu.enabled:get() then return end
 
@@ -184,7 +168,6 @@ local function resolve_enemy(cmd)
 
     local max_players_to_resolve = resolver_menu.max_players:get()
     local resolved_players = 0
-
     local intensity = resolver_menu.tick_analysis:get()
 
     for i = 1, engine.get_max_players(), intensity do
@@ -201,12 +184,16 @@ local function resolve_enemy(cmd)
         local yaw_difference = calculate_angle_difference(current_yaw, last_yaw)
 
         -- Ajustes dinámicos
-        local player_count = engine.get_max_players()
-        current_yaw = (player_count > resolver_menu.max_players:get()) and normalize_yaw(current_yaw + 10) or normalize_yaw(current_yaw + resolver_menu.yaw_offset:get())
-
-        if resolver_menu.dynamic:get() then
+        if math.abs(yaw_difference) > 35 then
+            if resolver_menu.invert:get() then
+                current_yaw = normalize_yaw(current_yaw + 180)
+            else
+                current_yaw = normalize_yaw(current_yaw + resolver_menu.yaw_offset:get())
+            end
+        elseif resolver_menu.dynamic:get() then
             local velocity = get_cached_property(player, "m_vecVelocity", 0.1):length()
             local is_crouching = get_cached_property(player, "m_flDuckAmount", 0.1) > 0
+
             if velocity > 60 then
                 current_yaw = normalize_yaw(current_yaw + 30)
             elseif is_crouching then
@@ -214,19 +201,39 @@ local function resolve_enemy(cmd)
             end
         end
 
+        -- Predicción y comparación
+        local predicted_position = predict_player_movement(player)
+        local comparison = compare_with_backup(player)
+
+        log_event("Predicted Position: x:" .. predicted_position.x .. " y:" .. predicted_position.y .. " z=" .. predicted_position.z)
+        log_event("Differences: Yaw:" .. comparison.yaw_difference .. ", Velocity=" .. comparison.velocity_difference .. ", Duck=" .. comparison.duck_change)
+
         current_yaw = adjust_based_on_accuracy(index, current_yaw)
         cmd:set_view_angle(current_yaw)
         player_yaw_cache[index] = current_yaw
         restore_player_data(player)
         resolved_players = resolved_players + 1
 
+        log_event("Resolved target: " .. index .. " yaw: " .. current_yaw)
         ::continue::
     end
 end
 
+-- Eventos y Callbacks
+local function on_player_hurt(event)
+    local hurt_id = engine.get_player_for_user_id(event:get_int("userid"))
+    local attacker_id = engine.get_player_for_user_id(event:get_int("attacker"))
+    if attacker_id == entity.get_local_player():get_index() then
+        local hurt_player = entity.get_player(hurt_id)
+        if hurt_player then
+            local index = hurt_player:get_index()
+            resolver_accuracy[index] = (resolver_accuracy[index] or 0) + 1
+        end
+    end
+end
+
 local function on_enemy_shot(event)
-    local event_name = event:get_name()
-    if event_name == "weapon_fire" then
+    if event:get_name() == "weapon_fire" then
         local shooter_id = engine.get_player_for_user_id(event:get_int("userid"))
         local shooter = entity.get_player(shooter_id)
         if shooter then
@@ -236,20 +243,6 @@ local function on_enemy_shot(event)
     end
 end
 
--- Sistema para evitar ajustes repetidos en cada tick
-local function prevent_frequent_adjustments(index)
-    local current_time = globalvars.get_current_time()
-    if not last_resolver_adjustment[index] or (current_time - last_resolver_adjustment[index] > 0.2) then
-        last_resolver_adjustment[index] = current_time
-        return true
-    end
-    return false
-end
-
---client.register_callback("fire_game_event", on_player_jump) falta la condicion de si esta saltando la entidad
-client.register_callback("fire_game_event", on_player_hurt)
-client.register_callback("fire_game_event", on_enemy_shot)
-client.register_callback("create_move", prevent_frequent_adjustments)
+client.register_callback("shot_fired", on_player_hurt)
+client.register_callback("weapon_fire", on_enemy_shot)
 client.register_callback("create_move", resolve_enemy)
-
-
