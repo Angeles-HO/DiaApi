@@ -967,7 +967,49 @@ local clientstate = {
     ]]
     force_full_update = clientstate.force_full_update
 }
+--[[ End api.nixware.cc]]--
 
+--[[ Started Netvars ]]--
+
+local m_fFlags = se.get_netvar("DT_BasePlayer", "m_fFlags")
+local m_iHealth = se.get_netvar("DT_BasePlayer", "m_iHealth")
+local m_iTeamNum = se.get_netvar("DT_BaseEntity", "m_iTeamNum")
+local m_hActiveWeapon = se.get_netvar("DT_BaseCombatCharacter", "m_hActiveWeapon")
+local m_vecOrigin = se.get_netvar("DT_BaseEntity", "m_vecOrigin")
+local m_angEyeAngles = se.get_netvar("DT_CSPlayer", "m_angEyeAngles")
+local m_flSimulationTime = se.get_netvar("DT_BaseEntity", "m_flSimulationTime")
+local m_flOldSimulationTime = m_flSimulationTime + 0x4;
+local m_lifeState = se.get_netvar("DT_BasePlayer", "m_lifeState")
+local m_bPinPulled = se.get_netvar("DT_BaseCSGrenade", "m_bPinPulled")
+local m_fThrowTime = se.get_netvar("DT_BaseCSGrenade", "m_fThrowTime")
+local m_flLowerBodyYawTarget = se.get_netvar("DT_CSPlayer", "m_flLowerBodyYawTarget")
+local m_bGunGameImmunity = se.get_netvar("DT_CSPlayer", "m_bGunGameImmunity")
+local m_flFlashDuration = se.get_netvar("DT_CSPlayer", "m_flFlashDuration")
+local m_bIsScoped = se.get_netvar("DT_CSPlayer", "m_bIsScoped")
+local m_flNextAttack = se.get_netvar("DT_BaseCombatCharacter", "m_flNextAttack")
+local m_zoomLevel = se.get_netvar("DT_WeaponCSBaseGun", "m_zoomLevel")
+local m_Collision = se.get_netvar("DT_BaseEntity", "m_Collision")
+local m_flDuckSpeed = se.get_netvar("DT_BasePlayer", "m_flDuckSpeed")
+local m_flDuckAmount = se.get_netvar("DT_BasePlayer", "m_flDuckAmount")
+local m_iClip1 = se.get_netvar("DT_BaseCombatWeapon", "m_iClip1")
+local m_iClip2 = se.get_netvar("DT_BaseCombatWeapon", "m_iClip2")
+local m_fAccuracyPenalty = se.get_netvar("DT_WeaponCSBase", "m_fAccuracyPenalty");
+local m_flPostponeFireReadyTime = se.get_netvar("DT_WeaponCSBase", "m_flPostponeFireReadyTime");
+local m_flNextPrimaryAttack = 0x3238;  -- se.get_netvar("DT_BaseCombatWeapon", "LocalActiveWeaponData", "m_flNextPrimaryAttack");
+local m_iItemDefinitionIndex = 0x2FAA; -- se.get_netvar("DT_BaseAttributableItem", "m_AttributeManager", "m_Item", "m_iItemDefinitionIndex");
+local m_vecViewOffset = 0x108;
+local m_nTickBase = 0x3430; -- se.get_netvar("DT_BasePlayer", "localdata", "m_nTickBase");
+local m_MoveType = 0x25C;
+local m_aimPunchAngle = 0x302C;
+local m_flNextSecondaryAttack = 0x323C; -- se.get_netvar("DT_BaseCombatWeapon", "LocalActiveWeaponData", "m_flNextSecondaryAttack");
+local m_iShotsFired = 0xA390; -- se.get_convar("DT_CSPlayer", "cslocaldata", "m_iShotsFired");
+local m_vecVelocity = {
+    [0] = se.get_netvar("DT_BasePlayer", "m_vecVelocity[0]"),
+    [1] = se.get_netvar("DT_BasePlayer", "m_vecVelocity[1]"),
+	[2] = se.get_netvar("DT_BasePlayer", "m_vecVelocity[2]")
+}
+
+--[[ End Netvars ]]--
 return {
     ui,
     client,
