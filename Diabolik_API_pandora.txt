@@ -733,6 +733,10 @@ local global_vars = {
     ]]
 }
 
+local g_props = {
+    
+}
+
 --[[ Update Important netvars ]]
 local update_global_vars = function()
     global_vars.tickcount = global_vars.tickcount
@@ -794,6 +798,12 @@ Length3D = function(x, y, z)
     return math.sqrt((x^2)+(y^2 )+(z^2))
 end
 
+Clamp_yaw = function(yaw)
+	while yaw < -180.0 do yaw = yaw + 360.0 end
+	while yaw > 180.0 do yaw = yaw - 360.0 end
+	return yaw
+end
+
 -- verificacion de vector i/o valores nulos y retorno de distancia
 Verify_vector_components = function(parametro)
     if type(parametro) ~= "table" then return false end
@@ -834,6 +844,21 @@ Is_alive = function(entity) -- returns true if the entity is alive
             return false
         end
         return true
+    end
+end
+
+Get_fLBYT = function(entity)
+    if entity then
+        local body_yaw = entity:get_prop("DT_CSPlayer", "m_flLowerBodyYawTarget"):get_int()
+        return body_yaw
+    end
+end
+
+AngEye = function(entity)
+    if entity then
+        local x = entity:get_prop("DT_CSPlayer", "m_angEyeAngles[0]"):get_float()
+        local y = entity:get_prop("DT_CSPlayer", "m_angEyeAngles[1]"):get_float()
+        return {x, y}
     end
 end
 
@@ -922,6 +947,9 @@ return {
     bit = bit,
     global_vars = global_vars,
     urls = urls,
+    AngEye = AngEye,
+    Clamp_yaw = Clamp_yaw,
+    Get_fLBYT = Get_fLBYT,
     Get_velocity = Get_velocity,
     Is_crouching = Is_crouching,
     Get_health = Get_health,
