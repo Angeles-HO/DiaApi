@@ -789,6 +789,26 @@ Download_files = function(file_list, base_url, base_destination)
     end
 end
 
+Get_team = function(entity) -- get health of entity
+    local team_num = entity:get_prop("DT_BaseEntity", "m_iTeamNum"):get_int()
+    return team_num
+end
+
+Get_health = function(entity) -- get health of entity
+    local health = entity:get_prop("DT_BasePlayer", "m_iHealth"):get_int()
+    return health
+end
+
+Is_alive = function(entity) -- returns true if the entity is alive
+    if entity then
+        local health = Get_health(entity)
+        if health > 0 then
+            return true
+        else
+            return false
+        end
+    end
+end
 
 Get_velocity = function(entity)
     -- Get the velocity vector magnitude of the entity
@@ -877,6 +897,9 @@ return {
     urls = urls,
     Get_velocity = Get_velocity,
     Is_crouching = Is_crouching,
+    Get_health = Get_health,
+    Is_alive = Is_alive,
+    Get_team = Get_team,
     Is_inair = Is_inair,
     Is_moving = Is_moving,
     Is_standing = Is_standing,
