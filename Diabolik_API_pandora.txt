@@ -789,9 +789,14 @@ Download_files = function(file_list, base_url, base_destination)
     end
 end
 
-Get_team = function(entity) -- get health of entity
-    local team_num = entity:get_prop("DT_BaseEntity", "m_iTeamNum"):get_int()
-    return team_num
+Get_vector = function(entity) -- get x,y,z positions of entity
+    local ent_vec = entity:get_prop("DT_BaseEntity", "m_vecOrigin"):get_int()
+    return ent_vec
+end
+
+Get_team = function(entity) -- get team of entity
+    local ent_team = entity:get_prop("DT_BaseEntity", "m_iTeamNum"):get_int()
+    return ent_team
 end
 
 Get_health = function(entity) -- get health of entity
@@ -898,6 +903,7 @@ return {
     Get_velocity = Get_velocity,
     Is_crouching = Is_crouching,
     Get_health = Get_health,
+    Get_vector = Get_vector,
     Is_alive = Is_alive,
     Get_team = Get_team,
     Is_inair = Is_inair,
