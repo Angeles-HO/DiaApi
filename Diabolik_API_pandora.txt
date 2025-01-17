@@ -789,6 +789,29 @@ Download_files = function(file_list, base_url, base_destination)
     end
 end
 
+Length3D = function(x, y, z)
+    assert(type(x) == "number" and type(y) == "number" and type(z) == "number", "Invalid input Length3D") -- https://www-lua-org.translate.goog/pil/8.3.html?_x_tr_sl=en&_x_tr_tl=es&_x_tr_hl=es&_x_tr_pto=tc
+    return math.sqrt((x^2)+(y^2 )+(z^2))
+end
+
+-- verificacion de vector i/o valores nulos y retorno de distancia
+Verify_vector_components = function(parametro)
+    if type(parametro) ~= "table" then return false end
+    if not parametro.x or not parametro.y or not parametro.z then return false end
+    if type(parametro.x) ~= "number" or type(parametro.y) ~= "number" or type(parametro.z) ~= "number" then return false end
+    return true
+end
+
+-- verificacion de vectores i/o valores nulos y retorno de distancia
+Dist_3d = function(player_position, enemy_position)
+    if not Verify_vector_components(player_position) then print("Invalid player position") end
+    if not Verify_vector_components(enemy_position) then print("Invalid enemy position") end
+    local dx = player_position.x - enemy_position.x
+    local dy = player_position.y - enemy_position.y
+    local dz = player_position.z - enemy_position.z
+    return Length3D(dx, dy, dz)
+end
+
 Get_vector = function(entity) -- get x,y,z positions of entity
     local ent_vec = entity:get_prop("DT_BaseEntity", "m_vecOrigin"):get_int()
     return ent_vec
@@ -807,11 +830,10 @@ end
 Is_alive = function(entity) -- returns true if the entity is alive
     if entity then
         local health = Get_health(entity)
-        if health > 0 then
-            return true
-        else
+        if health <= 0 then
             return false
         end
+        return true
     end
 end
 
@@ -904,6 +926,9 @@ return {
     Is_crouching = Is_crouching,
     Get_health = Get_health,
     Get_vector = Get_vector,
+    Verify_vector_components = Verify_vector_components,
+    Length3D = Length3D,
+    Dist_3d = Dist_3d,
     Is_alive = Is_alive,
     Get_team = Get_team,
     Is_inair = Is_inair,
