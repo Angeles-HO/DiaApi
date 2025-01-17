@@ -813,7 +813,7 @@ Dist_3d = function(player_position, enemy_position)
 end
 
 Get_vector = function(entity) -- get x,y,z positions of entity
-    local ent_vec = entity:get_prop("DT_BaseEntity", "m_vecOrigin"):get_int()
+    local ent_vec = entity:get_prop("DT_BaseEntity", "m_vecOrigin"):get_vector()
     return ent_vec
 end
 
