@@ -798,6 +798,24 @@ Length3D = function(x, y, z)
     return math.sqrt((x^2)+(y^2 )+(z^2))
 end
 
+Angle_diff = function(dest, src)
+    local delta = 0
+    delta = math.fmod(dest - src, 360)
+    if (dest > src) then 
+        if (delta >= 180) then
+            delta = delta - 360
+        end elseif (delta <= -180) then
+            delta = delta + 360
+        end 
+    return delta
+end
+
+Clamp = function(val, min, max)
+    if type(val) ~= "number" or type(min) ~= "number" or type(max) ~= "number" then error("no numbers") end
+    if val == nil then return min end
+    return math.max(min, math.min(max, val))
+end
+
 Clamp_yaw = function(yaw)
 	while yaw < -180.0 do yaw = yaw + 360.0 end
 	while yaw > 180.0 do yaw = yaw - 360.0 end
@@ -948,6 +966,8 @@ return {
     global_vars = global_vars,
     urls = urls,
     AngEye = AngEye,
+    Clamp = Clamp,
+    Angle_diff = Angle_diff,
     Clamp_yaw = Clamp_yaw,
     Get_fLBYT = Get_fLBYT,
     Get_velocity = Get_velocity,
