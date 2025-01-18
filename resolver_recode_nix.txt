@@ -1,5 +1,7 @@
 --[[ Beta resolver with various features for nixware software ARG PAAPAA ]]--
 
+--[[ development on pause, 1/18/25 ]]--
+
 -- Librerías y FFI para optimización
 local ffi = require("ffi")
 ffi.cdef[[
