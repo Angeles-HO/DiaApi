@@ -810,6 +810,13 @@ Angle_diff = function(dest, src)
     return delta
 end
 
+CalcAngle = function(local_origin, target_origin) -- usin vect_o to vect_dest, get yaw in (n°)
+    local delta = Dia_API.vector.new(target_origin.x - local_origin.x, target_origin.y - local_origin.y, target_origin.z - local_origin.z)
+    local hyp = math.sqrt(delta.x * delta.x + delta.y * delta.y)
+    local yaw = math.atan2(delta.y, delta.x) * (180 / math.pi)
+    return yaw
+end
+
 Clamp = function(val, min, max)
     if type(val) ~= "number" or type(min) ~= "number" or type(max) ~= "number" then error("no numbers") end
     if val == nil then return min end
