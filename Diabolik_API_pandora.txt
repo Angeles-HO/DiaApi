@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global
 --[[ Tables ]]--
 local client = {
     log = client.log,
@@ -50,8 +51,8 @@ local client = {
         - returns position of camera
         - client.camera_position(): vector
     ]]
-    camera_angles = client.camera_angles,
-    --[[ 
+    camera_angles = client.camera_angles, --[[ 
+        - [x = -89 (up), 89 (down) | y = -179.9, 179.9 | z = 0 ]
         - returns camera angles
         - client.camera_angles(): qangle
     ]]
@@ -97,16 +98,38 @@ local engine_trace = {
     trace_ray = engine_trace.trace_ray,
     --[[ 
         - returns a game_trace object
-        - engine_trace.trace_ray(start: vector, end: vector, skip: entity, mask: number): game_trace
+        - engine_trace.trace_ray(start: vector, end: vector, skip : entity, mask: number): game_trace
         - start	vector	trace starting position
         - end	vector	trace ending position
         - skip	entity	entity to be skipped (filter)
         - mask	number (integer)	trace mask
+        game_trace
+Members
+.allsolid
+game_trace.allsolid
+
+.endpos
+game_trace.endpos: vector
+
+.fraction
+game_trace.fraction
+
+.hitbox
+game_trace.hitbox
+
+.hitgroup
+game_trace.hitgroup
+
+.startsolid
+game_trace.startsolid
     ]]
 }
 
 local entity = {
-    hitbox_position = entity.hitbox_position,
+    hitbox_position = hitbox_position,
+    get_prop = get_prop,
+    eye_position = eye_position,
+    origin = origin
 }
 
 local entity_list = {
@@ -733,10 +756,6 @@ local global_vars = {
     ]]
 }
 
-local g_props = {
-    
-}
-
 --[[ Update Important netvars ]]
 local update_global_vars = function()
     global_vars.tickcount = global_vars.tickcount
@@ -749,7 +768,7 @@ callbacks.register("paint", function()
     update_global_vars()
 end)
 
---[[ Locals ]]
+--[[ Paths ]]
 local base_path = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Counter-Strike Global Offensive\\Pandora\\"
 
 --[[ FFI ]]
@@ -798,27 +817,57 @@ Length3D = function(x, y, z)
     return math.sqrt((x^2)+(y^2 )+(z^2))
 end
 
+Atan2 = function(y, x)
+    if x > 0 then
+        return math.atan(y / x)
+    elseif x < 0 then
+        if y == 0 then
+            return math.pi
+        elseif y > 0 then
+            return math.atan(y / x) + math.pi
+        else -- y < 0
+            return math.atan(y / x) - math.pi
+        end
+    elseif x == 0 then
+        if y > 0 then
+            return math.pi / 2
+        elseif y < 0 then
+            return -math.pi / 2
+        else -- y == 0
+            return nil
+        end
+    end
+end
+
+Cross = function(u, v) -- Producto cruzado
+    assert(#u >= 3 and #v >= 3, "Los vectores deben tener al menos 3 elementos")
+    return {
+        u[2] * v[3] - u[3] * v[2],
+        u[3] * v[1] - u[1] * v[3],
+        u[1] * v[2] - u[2] * v[1]
+    }
+end
+
 Angle_diff = function(dest, src)
     local delta = 0
     delta = math.fmod(dest - src, 360)
-    if (dest > src) then 
+    if (dest > src) then
         if (delta >= 180) then
             delta = delta - 360
-        end elseif (delta <= -180) then
-            delta = delta + 360
-        end 
+        end
+    elseif (delta <= -180) then
+        delta = delta + 360
+    end
     return delta
 end
 
-CalcAngle = function(local_origin, target_origin) -- usin vect_o to vect_dest, get yaw in (n°)
-    local delta = vector.new(target_origin.x - local_origin.x, target_origin.y - local_origin.y, target_origin.z - local_origin.z)
-    local hyp = math.sqrt(delta.x * delta.x + delta.y * delta.y)
-    local yaw = math.atan2(delta.y, delta.x) * (180 / math.pi)
-    return yaw
-end
-
 Clamp = function(val, min, max)
-    if type(val) ~= "number" or type(min) ~= "number" or type(max) ~= "number" then error("no numbers") end
+    if type(val) ~= "number" or type(min) ~= "number" or type(max) ~= "number" then
+        error("error Dia_API [Clamp fn]")
+    end
+    if min > max then
+        min, max = max, min
+    end
     if val == nil then return min end
     return math.max(min, math.min(max, val))
 end
@@ -829,16 +878,205 @@ Clamp_yaw = function(yaw)
 	return yaw
 end
 
--- verificacion de vector i/o valores nulos y retorno de distancia
-Verify_vector_components = function(parametro)
-    if type(parametro) ~= "table" then return false end
-    if not parametro.x or not parametro.y or not parametro.z then return false end
-    if type(parametro.x) ~= "number" or type(parametro.y) ~= "number" or type(parametro.z) ~= "number" then return false end
+Length_sqr = function(vec)
+    return (vec.x * vec.x) + (vec.y * vec.y) + (vec.z * vec.z)
+end
+
+Normalized = function(v) -- Normaliza un vector
+    assert(#v >= 3, "El vector debe tener al menos 3 elementos")
+    local magnitude = math.sqrt(v[1]^2 + v[2]^2 + v[3]^2)
+    if magnitude == 0 then
+        return {0, 0, 0}
+    end
+    return {
+        v[1] / magnitude,
+        v[2] / magnitude,
+        v[3] / magnitude
+    }
+end
+
+CalcAngle = function(local_origin, target_origin)
+    local delta = {
+        x = target_origin.x - local_origin.x,
+        y = target_origin.y - local_origin.y,
+        z = target_origin.z - local_origin.z
+    }
+    local hyp = math.sqrt(delta.x * delta.x + delta.y * delta.y)
+    local yaw = Atan2(delta.y, delta.x) * (180 / math.pi)
+    return yaw
+end
+
+Initialize_animation_info = function()
+    return {
+        m_flResolveAngle = 0,
+        m_flLastResolveAngle = 0,
+        m_flAngleBeforeResolve = 0,
+        m_flAngleAfterResolve = 0,
+        m_flResolveDelta = 0,
+        iResolveIndex = 0,
+        m_flPreviousAngleDifference = 0,
+        m_flVelocity = 0,
+        m_flWalkToRunTransition = 0,
+        m_bWalkToRunTransitionState = false
+    }
+end
+
+Angle_to_forward_vector = function(pitch, yaw, roll)
+    local sy = math.sin(math.rad(yaw))
+    local cy = math.cos(math.rad(yaw))
+    local sp = math.sin(math.rad(pitch))
+    local cp = math.cos(math.rad(pitch))
+    return {cp * cy, cp * sy, -sp}
+end
+
+Get_backward_side = function(player)
+    local local_player = entity_list.get_client_entity(engine.get_local_player())
+    if not player or not local_player then return 0 end
+    local a = Get_vector(local_player)
+    local b = Get_vector(player)
+    if not a or not b or not a.x or not a.y or not a.z or not b.x or not b.y or not b.z then
+        return 0
+    end
+    return CalcAngle(a, b)
+end
+
+Anglemod = function(angle) -- Normalizar angulo entre 0 y 360
+    return (angle % 360 + 360) % 360
+end
+
+ApproachAngle = function(target, value, speed) -- Aproximar un angulo hacia el objetivo
+    target = Anglemod(target)
+    value = Anglemod(value)
+    local delta = target - value
+    speed = math.abs(speed)
+
+    if delta < -180.0 then -- Ajustar delta para manejar la envoltura circular
+        delta = delta + 360.0
+    elseif delta > 180.0 then
+        delta = delta - 360.0
+    end
+
+    if delta > speed then
+        value = value + speed
+    elseif delta < -speed then
+        value = value - speed
+    else
+        value = target
+    end
+
+    return value
+end
+
+-- Ajusta el yaw del jugador si esta cerca de una pared (freestand)
+Calculate_adjusted_yaw = function(player_position, player_view_direction, current_yaw, current_pitch)
+    local max_simulation_distance = 100
+    local attacker = engine.get_local_player()
+    local damage, penetration_count = penetration.simulate_bullet(
+        attacker, -- Jugador atacante
+        player_position, -- Posición inicial
+        player_position + player_view_direction * max_simulation_distance -- Posición final
+    )
+    if penetration_count > 0 and math.abs(current_pitch + 90) < 5 then
+        return 90
+    end
+    return current_yaw
+end
+
+TraceWithDistance = function(start_pos, end_pos, player, trace_filter)
+    local trace = engine_trace.trace_ray(start_pos, end_pos, player, trace_filter)
+    return trace, (trace.end_pos - trace.start_pos):length()
+end
+
+CalculatePredictedWalkToRunTransition = function(m_flWalkToRunTransition, m_bWalkToRunTransitionState, m_flLastUpdateIncrement, m_flVelocityLengthXY)
+    ANIM_TRANSITION_WALK_TO_RUN = false
+    ANIM_TRANSITION_RUN_TO_WALK = true
+    CSGO_ANIM_WALK_TO_RUN_TRANSITION_SPEED = 2
+    PLAYER_RUN_SPEED = 260
+    CS_PLAYER_SPEED_WALK_MODIFIER = 0.52
+    local transition_speed_threshold = PLAYER_RUN_SPEED * CS_PLAYER_SPEED_WALK_MODIFIER
+    if m_flWalkToRunTransition > 0 and m_flWalkToRunTransition < 1 then
+        local increment = m_flLastUpdateIncrement * CSGO_ANIM_WALK_TO_RUN_TRANSITION_SPEED
+        if m_bWalkToRunTransitionState == ANIM_TRANSITION_WALK_TO_RUN then
+            m_flWalkToRunTransition = m_flWalkToRunTransition + increment
+        else
+            m_flWalkToRunTransition = m_flWalkToRunTransition - increment
+        end
+        m_flWalkToRunTransition = Clamp(m_flWalkToRunTransition, 0, 1)
+    end
+    if m_flVelocityLengthXY > transition_speed_threshold then
+        if m_bWalkToRunTransitionState == ANIM_TRANSITION_RUN_TO_WALK then
+            m_bWalkToRunTransitionState = ANIM_TRANSITION_WALK_TO_RUN
+            m_flWalkToRunTransition = math.max(0.01, m_flWalkToRunTransition)
+        end
+    elseif m_flVelocityLengthXY < transition_speed_threshold then
+        if m_bWalkToRunTransitionState == ANIM_TRANSITION_WALK_TO_RUN then
+            m_bWalkToRunTransitionState = ANIM_TRANSITION_RUN_TO_WALK
+            m_flWalkToRunTransition = math.min(0.99, m_flWalkToRunTransition)
+        end
+    end
+    return m_flWalkToRunTransition, m_bWalkToRunTransitionState
+end
+
+CalculatePredictedFootYaw = function(m_flFootYawLast, m_flEyeYaw, m_flLowerBodyYawTarget, m_flWalkToRunTransition, m_vecVelocity, m_flMinBodyYaw, m_flMaxBodyYaw)
+    local m_flVelocityLengthXY = math.min(Length_sqr(m_vecVelocity), 320) -- calcula la longitud del vector de velocidad en el plano XY, limitada a [value]
+    local m_flFootYaw = Clamp(m_flFootYawLast, -360, 360) -- limita m_flFootYawLast al rango [-360, 360]
+    local flEyeFootDelta = Angle_diff(m_flEyeYaw, m_flFootYaw) -- calcula la diferencia angular entre la orientacion de los ojos y la orientacion del pie
+
+    if flEyeFootDelta > m_flMaxBodyYaw then -- ajusta m_flFootYaw si la diferencia excede los limites permitidos
+        m_flFootYaw = m_flEyeYaw - math.abs(m_flMaxBodyYaw)
+    elseif flEyeFootDelta < m_flMinBodyYaw then
+        m_flFootYaw = m_flEyeYaw + math.abs(m_flMinBodyYaw)
+    end
+
+    m_flFootYaw = Anglemod(m_flFootYaw) -- Normaliza m_flFootYaw al rango [0, 360)
+    local m_flLastUpdateIncrement = global_vars.interval_per_tick() -- obtiene el incremento de tiempo desde la última actualizacion de los ticks del sv
+    if ((m_flVelocityLengthXY > 0.1) or (m_vecVelocity.z > 100)) then -- si el personaje se esta moviendo o tiene una velocidad vertical significativ
+        local transition_speed = 30 + (20 * m_flWalkToRunTransition) -- calcula la velocidad de transición basada en m_flWalkToRunTransition
+        m_flFootYaw = ApproachAngle(m_flEyeYaw, m_flFootYaw, m_flLastUpdateIncrement * transition_speed) -- ajusta m_flFootYaw acercandolo a m_flEyeYaw
+    else
+        m_flFootYaw = ApproachAngle(m_flLowerBodyYawTarget, m_flFootYaw, m_flLastUpdateIncrement * 100) -- Si el personaje esta casi detenido, ajusta m_flFootYaw hacia m_flLowerBodyYawTarget
+    end
+    return m_flFootYaw -- retorna m_flFootYaw
+end
+
+UpdateEnemyList = function() -- return enemy list
+    local local_player = entity_list.get_client_entity(engine.get_local_player())
+    local AllPlayers = entity_list.get_all("CCSPlayer")
+    if not local_player or #AllPlayers < 1 then return {} end
+    local Enemy_list = {}
+    for i = 1, #AllPlayers do
+        local entity_filtered = entity_list.get_client_entity(AllPlayers[i])
+        local entity_team, local_team = Get_team(entity_filtered), Get_team(local_player)
+        if entity_filtered ~= local_player and entity_team ~= local_team and Is_alive(entity_filtered) == true then
+            table.insert(Enemy_list, entity_filtered)
+        end
+    end
+    return Enemy_list
+end
+
+Verify_vector_components = function(parametro) -- verificacion de vector i/o valores nulos y retorno de distancia
+    if type(parametro) ~= "table" then return false end -- verifica si el parametro es una tabla
+    if not parametro.x or not parametro.y or not parametro.z then return false end -- verifica si los valores existen
+    if type(parametro.x) ~= "number" or type(parametro.y) ~= "number" or type(parametro.z) ~= "number" then return false end -- verifica si los valores son del tipo numerico
     return true
 end
 
--- verificacion de vectores i/o valores nulos y retorno de distancia
-Dist_3d = function(player_position, enemy_position)
+-- Obtener posiciones de las flechas según el estado de inversión
+Draw_arrow = function(ind_pos, is_inverted, color_active, color_inactive, font)
+    local left_pos = ind_pos.x - 50
+    local right_pos = ind_pos.x + 30
+    local y_pos = ind_pos.y - 11
+
+    -- Determinar colores según la inversión
+    local left_color = is_inverted and color_inactive or color_active
+    local right_color = is_inverted and color_active or color_inactive
+
+    -- Dibujar las flechas
+    font:text(left_pos, y_pos, left_color, " ◄ ")
+    font:text(right_pos, y_pos, right_color, " ► ")
+end
+
+Dist_3d = function(player_position, enemy_position) -- verificacion de vectores i/o valores nulos y retorno de distancia entre estos
     if not Verify_vector_components(player_position) then print("Invalid player position") end
     if not Verify_vector_components(enemy_position) then print("Invalid enemy position") end
     local dx = player_position.x - enemy_position.x
@@ -847,12 +1085,12 @@ Dist_3d = function(player_position, enemy_position)
     return Length3D(dx, dy, dz)
 end
 
-Get_vector = function(entity) -- get x,y,z positions of entity
-    local ent_vec = entity:get_prop("DT_BaseEntity", "m_vecOrigin"):get_vector()
-    return ent_vec
+Get_vector = function(entity) -- get (x,y,z) positions of entity
+    local entity = entity:get_prop("DT_BaseEntity", "m_vecOrigin"):get_vector()
+    return entity
 end
 
-Get_team = function(entity) -- get team of entity
+Get_team = function(entity) -- get team of entity returns a int value 
     local ent_team = entity:get_prop("DT_BaseEntity", "m_iTeamNum"):get_int()
     return ent_team
 end
@@ -860,6 +1098,11 @@ end
 Get_health = function(entity) -- get health of entity
     local health = entity:get_prop("DT_BasePlayer", "m_iHealth"):get_int()
     return health
+end
+
+Get_shoot_position = function(player) -- obtiene la position del enemigo cuando dispara, usar con el callback [on_shot_fired]
+    local p_vec = Get_vector(player) -- Vector (x, y, z)
+    return { p_vec.x, p_vec.y, p_vec.z }
 end
 
 Is_alive = function(entity) -- returns true if the entity is alive
@@ -870,6 +1113,16 @@ Is_alive = function(entity) -- returns true if the entity is alive
         end
         return true
     end
+end
+
+Is_scoped = function(entity) -- is entity es scoped return true
+    if entity then
+        local scoped = entity:get_prop("DT_CSPlayer", "m_bIsScoped"):get_bool()
+        if scoped then
+            return true
+        end
+    end
+    return false
 end
 
 Get_fLBYT = function(entity)
@@ -887,63 +1140,54 @@ AngEye = function(entity)
     end
 end
 
-Get_velocity = function(entity)
-    -- Get the velocity vector magnitude of the entity
-    if entity then
-        local x = entity:get_prop("DT_BasePlayer", "m_vecVelocity[0]"):get_float()
-        local y = entity:get_prop("DT_BasePlayer", "m_vecVelocity[1]"):get_float()
-        return math.floor(math.sqrt(x * x + y * y))
-    end
-    return 0
+Get_prop_int = function(entity, table_name, prop_name)
+    return entity:get_prop(table_name, prop_name):get_int()
 end
 
-Is_crouching = function(entity)
-    -- Check if the entity is crouching
-    if entity then
-        local flags = entity:get_prop("DT_BasePlayer", "m_fFlags"):get_int()
-        return bit.band(flags, bit.lshift(2, 0)) ~= 0
-    end
-    return false
+Get_prop_float = function(entity, table_name, prop_name)
+    return entity:get_prop(table_name, prop_name):get_float()
 end
 
-Is_inair = function(entity)
-    -- Check if the entity is in the air
-    if entity then
-        return entity:get_prop("DT_BasePlayer", "m_hGroundEntity"):get_int() == -1
-    end
-    return false
+Get_velocity = function(entity) -- Calcular velocidad del jugador
+    if not entity then return 0 end
+    local x = Get_prop_float(entity, "DT_BasePlayer", "m_vecVelocity[0]")
+    local y = Get_prop_float(entity, "DT_BasePlayer", "m_vecVelocity[1]")
+    return math.floor(math.sqrt(x * x + y * y))
 end
 
-Is_moving = function(entity)
-    -- Check if the entity is moving, but not in the air
-    if entity then
-        local velocity = Get_velocity(entity)
-        return velocity > 49 and not Is_inair(entity)
-    end
-    return false
+Is_crouching = function(entity) -- Verificar si el jugador esta agachado/duck
+    if not entity then return false end
+    local CROUCH_FLAG = 4
+    local flags = Get_prop_int(entity, "DT_BasePlayer", "m_fFlags")
+    return bit.band(flags, CROUCH_FLAG) ~= 0
 end
 
-Is_standing = function(entity)
-    -- Check if the entity is standing (not moving and not in the air)
-    if entity then
-        return not Is_moving(entity) and not Is_inair(entity)
-    end
-    return false
+Is_inair = function(entity) -- Verificar si el jugador esta en el aire
+    if not entity then return false end
+    return Get_prop_int(entity, "DT_BasePlayer", "m_hGroundEntity") == -1
+end
+
+Is_moving = function(entity) -- Verificar si el jugador esta moviendose
+    if not entity then return false end
+    local velocity = Get_velocity(entity)
+    return velocity >= 8
+end
+
+Is_standing = function(entity) -- Verificar si el jugador esta quieto y no moviendose y tampoco en el aire
+    return entity and not Is_moving(entity) and not Is_inair(entity)
 end
 
 Is_slow_walking = function(entity)
-    -- Check if the entity is using slow walk
-    return entity and ui.get_rage("Misc", "General", "Movement", "Slow motion key"):get_key()
+    if not entity then return false end
+    return ui.get_rage("Misc", "General", "Movement", "Slow motion key"):get_key()
 end
 
-Is_fake_ducking = function(entity)
-    -- Check if the entity is fake-ducking (not in air, with specific duck speed/amount)
-    if entity then
-        local duck_speed = entity:get_prop("DT_BasePlayer", "m_flDuckSpeed"):get_float()
-        local duck_amount = entity:get_prop("DT_BasePlayer", "m_flDuckAmount"):get_float()
-        return duck_speed == 8 and duck_amount > 0 and not Is_inair(entity)
-    end
-    return false
+Is_fake_ducking = function(entity) -- Verificar si el jugador esta haciendo fakeduck
+    if not entity then return false end
+    local DUCK_SPEED_THRESHOLD = 8
+    local duck_speed = Get_prop_float(entity, "DT_BasePlayer", "m_flDuckSpeed")
+    local duck_amount = Get_prop_float(entity, "DT_BasePlayer", "m_flDuckAmount")
+    return duck_speed == DUCK_SPEED_THRESHOLD and duck_amount > 0 and not Is_inair(entity)
 end
 
 return {
@@ -973,21 +1217,39 @@ return {
     global_vars = global_vars,
     urls = urls,
     AngEye = AngEye,
+    CalculatePredictedWalkToRunTransition = CalculatePredictedWalkToRunTransition,
+    CalculatePredictedFootYaw = CalculatePredictedFootYaw,
     Clamp = Clamp,
+    Atan2 = Atan2,
+    Normalized = Normalized,
+    Anglemod = Anglemod,
+    ApproachAngle = ApproachAngle,
+    CalcAngle = CalcAngle,
     Angle_diff = Angle_diff,
+    ActualizarDatos = ActualizarDatos,
+    Initialize_animation_info = Initialize_animation_info,
+    Draw_arrow = Draw_arrow,
     Clamp_yaw = Clamp_yaw,
     Get_fLBYT = Get_fLBYT,
     Get_velocity = Get_velocity,
     Is_crouching = Is_crouching,
     Get_health = Get_health,
     Get_vector = Get_vector,
+    Get_shoot_position = Get_shoot_position,
+    TraceWithDistance = TraceWithDistance,
+    Calculate_adjusted_yaw = Calculate_adjusted_yaw,
+    Get_backward_side = Get_backward_side,
+    Angle_to_forward_vector = Angle_to_forward_vector,
     Verify_vector_components = Verify_vector_components,
+    UpdateEnemyList = UpdateEnemyList,
+    Cross = Cross,
     Length3D = Length3D,
     Dist_3d = Dist_3d,
     Is_alive = Is_alive,
     Get_team = Get_team,
     Is_inair = Is_inair,
     Is_moving = Is_moving,
+    Is_scoped = Is_scoped,
     Is_standing = Is_standing,
     Is_slow_walking = Is_slow_walking,
     Is_fake_ducking = Is_fake_ducking,
